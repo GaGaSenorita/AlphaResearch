@@ -6,7 +6,7 @@
   "runs": [
     {
       "seed": 42,
-      "directory": "seed42_round100",
+      "directory": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
       "factor_count": 342,
       "history_observations": 342,
       "llm_calls_total": 988,
@@ -20,7 +20,7 @@
     },
     {
       "seed": 123,
-      "directory": "seed123_round100",
+      "directory": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
       "factor_count": 342,
       "history_observations": 342,
       "llm_calls_total": 995,
@@ -34,7 +34,7 @@
     },
     {
       "seed": 456,
-      "directory": "seed456_round100",
+      "directory": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
       "factor_count": 342,
       "history_observations": 342,
       "llm_calls_total": 826,

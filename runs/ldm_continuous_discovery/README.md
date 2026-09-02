@@ -11,7 +11,7 @@ together.
 | 123 | 100 | 342 | 0.04495599 | 0.04528040 (R38) |
 | 456 | 100 | 342 | 0.03361301 | 0.03836634 (R38/R50/R75) |
 
-Each `seed*_round100/` directory contains:
+Each canonical `ldm_continuous_discovery_*_seed<seed>/` directory contains:
 
 - `factor_sequence.json`: all 342 factors in committed real-evaluation order,
   including each factor's expression and Train metrics;
