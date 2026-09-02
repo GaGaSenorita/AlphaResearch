@@ -190,18 +190,20 @@ def _collect_run_evidence(
                     )
 
 
-def _collect_extra_validation_evidence(
+def _collect_extra_evidence(
     ledgers: Iterable[Path],
     evidence: dict[str, dict[str, dict[str, dict[str, Any]]]],
+    *,
+    split: str,
 ) -> None:
     for ledger in ledgers:
         for row in _read_jsonl(ledger):
             candidate = row.get("candidate") or {}
-            result = row.get("validation") or {}
+            result = row.get(split) or {}
             _add_evidence(
                 evidence,
                 canonical=_canonical(candidate, row.get("canonical")),
-                split="validation",
+                split=split,
                 result=result,
                 seed=row.get("seed"),
                 checkpoint_round=row.get("checkpoint_round"),
@@ -248,8 +250,10 @@ def build_single_factor_library(
     *,
     train_rank_ic_threshold: float = 0.04,
     validation_rank_ic_threshold: float = 0.04,
+    test_rank_ic_audit_threshold: float = 0.04,
     include_seed_factors: bool = False,
     extra_validation_ledgers: Sequence[Path] = (),
+    extra_test_ledgers: Sequence[Path] = (),
 ) -> dict[str, Any]:
     """Aggregate, de-duplicate and classify single factors across runs."""
 
@@ -285,7 +289,8 @@ def build_single_factor_library(
             )
         _collect_run_evidence(run_dir, seed=seed, evidence=evidence)
 
-    _collect_extra_validation_evidence(extra_validation_ledgers, evidence)
+    _collect_extra_evidence(extra_validation_ledgers, evidence, split="validation")
+    _collect_extra_evidence(extra_test_ledgers, evidence, split="test")
 
     factors: list[dict[str, Any]] = []
     for canonical, occurrences in occurrences_by_canonical.items():
@@ -379,10 +384,13 @@ def build_single_factor_library(
         "schema_version": LIBRARY_SCHEMA,
         "policy": {
             "candidate_rule": f"Train RankIC >= {float(train_rank_ic_threshold):.6g}",
+            "train_rank_ic_threshold": float(train_rank_ic_threshold),
             "admission_rule": (
                 f"Validation RankIC >= {float(validation_rank_ic_threshold):.6g}"
             ),
+            "validation_rank_ic_threshold": float(validation_rank_ic_threshold),
             "test_usage": "retrospective audit only; never used for admission",
+            "test_audit_threshold": float(test_rank_ic_audit_threshold),
             "include_seed_factors": bool(include_seed_factors),
             "deduplication": "canonical expression across all selected seeds",
         },
@@ -398,6 +406,21 @@ def build_single_factor_library(
             "validation_below_threshold": counts["validation_below_threshold"],
             "with_retrospective_test_evidence": sum(
                 row["test_rank_ic"] is not None for row in factors
+            ),
+            "pending_retrospective_test": sum(
+                row["test_rank_ic"] is None for row in factors
+            ),
+            "retrospective_test_at_least_threshold": sum(
+                row["test_rank_ic"] is not None
+                and row["test_rank_ic"] >= float(test_rank_ic_audit_threshold)
+                for row in factors
+            ),
+            "train_validation_test_at_least_threshold": sum(
+                row["validation_rank_ic"] is not None
+                and row["validation_rank_ic"] >= float(validation_rank_ic_threshold)
+                and row["test_rank_ic"] is not None
+                and row["test_rank_ic"] >= float(test_rank_ic_audit_threshold)
+                for row in factors
             ),
         },
         "factors": factors,
@@ -450,7 +473,7 @@ def _write_csv(path: Path, factors: Sequence[Mapping[str, Any]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
     with temporary.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
     temporary.replace(path)
@@ -462,6 +485,22 @@ def write_single_factor_library(output_dir: Path, payload: Mapping[str, Any]) ->
     output_dir.mkdir(parents=True, exist_ok=True)
     factors = list(payload.get("factors", []))
     admitted = [row for row in factors if row.get("admitted")]
+    test_threshold = float((payload.get("policy") or {}).get("test_audit_threshold", 0.04))
+    test_audit_over_threshold = [
+        row
+        for row in factors
+        if row.get("test_rank_ic") is not None
+        and float(row["test_rank_ic"]) >= test_threshold
+    ]
+    three_split_audit = [
+        row
+        for row in test_audit_over_threshold
+        if row.get("validation_rank_ic") is not None
+        and float(row["validation_rank_ic"])
+        >= float(
+            (payload.get("policy") or {}).get("validation_rank_ic_threshold", 0.04)
+        )
+    ]
     write_json(output_dir / "single_factor_library.json", payload)
     _write_csv(output_dir / "single_factor_library.csv", factors)
     admitted_payload = {
@@ -473,6 +512,28 @@ def write_single_factor_library(output_dir: Path, payload: Mapping[str, Any]) ->
     }
     write_json(output_dir / "admitted_factors.json", admitted_payload)
     _write_csv(output_dir / "admitted_factors.csv", admitted)
+    test_audit_payload = {
+        "schema_version": LIBRARY_SCHEMA,
+        "warning": "retrospective Test audit only; never used for factor admission",
+        "threshold": test_threshold,
+        "factor_count": len(test_audit_over_threshold),
+        "factors": test_audit_over_threshold,
+    }
+    write_json(output_dir / "test_audit_over_threshold.json", test_audit_payload)
+    _write_csv(
+        output_dir / "test_audit_over_threshold.csv", test_audit_over_threshold
+    )
+    three_split_payload = {
+        "schema_version": LIBRARY_SCHEMA,
+        "warning": (
+            "post-hoc three-split audit; Test was not used during discovery or "
+            "formal Validation admission"
+        ),
+        "factor_count": len(three_split_audit),
+        "factors": three_split_audit,
+    }
+    write_json(output_dir / "three_split_audit_over_threshold.json", three_split_payload)
+    _write_csv(output_dir / "three_split_audit_over_threshold.csv", three_split_audit)
 
     summary = payload.get("summary") or {}
     readme = f"""# AlphaLDM single-factor library
@@ -486,10 +547,17 @@ This directory is derived from the ordered `factor_sequence.json` artifacts.
 - Validation-admitted factors: {summary.get('validation_admitted', 0)}
 - Pending Validation: {summary.get('validation_pending', 0)}
 - Below the Validation threshold: {summary.get('validation_below_threshold', 0)}
+- Measured on Test: {summary.get('with_retrospective_test_evidence', 0)}
+- Test audit >= {test_threshold:.6g}: {summary.get('retrospective_test_at_least_threshold', 0)}
+- Train/Validation/Test all above threshold: {summary.get('train_validation_test_at_least_threshold', 0)}
 
 `single_factor_library.*` contains every Train candidate and its status.
 `admitted_factors.*` is the strict factor-library view.  Formula, explanation,
 seed, round and original evaluation order are retained.  Test values, when
 present, are audit metadata and cannot admit a factor.
+`test_audit_over_threshold.*` is a descriptive retrospective view, not a
+selection or admission result.
+`three_split_audit_over_threshold.*` contains the post-hoc intersection of the
+Train, Validation and Test thresholds and carries the same Test-audit warning.
 """
     (output_dir / "README.md").write_text(readme, encoding="utf-8")

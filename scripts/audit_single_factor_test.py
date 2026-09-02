@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Evaluate only missing Train-qualified single factors on Validation.
+"""Retrospectively evaluate every Train-qualified factor on Test.
 
-This is a report-only job: it does not call the LLM, mutate discovery/search
-state, or evaluate Test.  Results are appended after every completed batch, so
-the job can be resumed safely.
+The resulting Test ledger is descriptive audit evidence only.  It is never
+used to generate candidates, choose a Validation winner, or admit a factor to
+the formal library.  Rows are appended after each completed batch so the job
+can be resumed safely.
 """
 
 from __future__ import annotations
@@ -12,7 +13,6 @@ import argparse
 import json
 from pathlib import Path
 
-from alpha_research.cli import append_cli_arg, build_expansion_context, expand_value, load_config
 from alpha_research.factor_library import (
     LIBRARY_SCHEMA,
     build_single_factor_library,
@@ -20,39 +20,10 @@ from alpha_research.factor_library import (
     write_single_factor_library,
 )
 from alpha_research.io import append_jsonl
-from alpha_research.runner import (
-    REPO_ROOT,
-    build_evaluator,
-    parse_args as parse_runner_args,
-    resolve_repo_path,
-)
+from alpha_research.runner import REPO_ROOT, build_evaluator, resolve_repo_path
 from alpha_research.types import FactorCandidate, Period
 
-
-DEFAULT_CONFIG = (
-    "configs/ldm_continuous_discovery/"
-    "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025.yaml"
-)
-
-
-def _resolved_runner_args(config_path: Path, *, seed: int) -> argparse.Namespace:
-    config = load_config(config_path)
-    raw_args = dict(config.get("args") or {})
-    raw_args["ldm-random-seed"] = seed
-    context = build_expansion_context(config, raw_args, config_path)
-    argv = [
-        "--environment",
-        str(config["environment"]),
-        "--method",
-        str(config["method"]),
-    ]
-    for key, value in raw_args.items():
-        append_cli_arg(
-            argv,
-            str(key),
-            expand_value(value, config_path, context=context),
-        )
-    return parse_runner_args(argv)
+from backfill_single_factor_validation import DEFAULT_CONFIG, _resolved_runner_args
 
 
 def _build(
@@ -61,18 +32,21 @@ def _build(
     output_dir: Path,
     train_threshold: float,
     validation_threshold: float,
+    test_threshold: float,
     include_seed_factors: bool,
 ) -> dict:
-    ledger = output_dir / "single_factor_validation_ledger.jsonl"
+    validation_ledger = output_dir / "single_factor_validation_ledger.jsonl"
+    test_ledger = output_dir / "single_factor_test_ledger.jsonl"
     return build_single_factor_library(
         run_dirs,
         train_rank_ic_threshold=train_threshold,
         validation_rank_ic_threshold=validation_threshold,
+        test_rank_ic_audit_threshold=test_threshold,
         include_seed_factors=include_seed_factors,
-        extra_validation_ledgers=[ledger] if ledger.is_file() else [],
-        extra_test_ledgers=[
-            output_dir / "single_factor_test_ledger.jsonl"
-        ] if (output_dir / "single_factor_test_ledger.jsonl").is_file() else [],
+        extra_validation_ledgers=(
+            [validation_ledger] if validation_ledger.is_file() else []
+        ),
+        extra_test_ledgers=[test_ledger] if test_ledger.is_file() else [],
     )
 
 
@@ -87,9 +61,10 @@ def main() -> int:
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 123, 456])
     parser.add_argument("--train-rank-ic-threshold", type=float, default=0.04)
     parser.add_argument("--validation-rank-ic-threshold", type=float, default=0.04)
+    parser.add_argument("--test-rank-ic-audit-threshold", type=float, default=0.04)
     parser.add_argument("--include-seed-factors", action="store_true")
     parser.add_argument("--parallel", type=int, default=4)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=None)
@@ -107,18 +82,20 @@ def main() -> int:
         output_dir=output_dir,
         train_threshold=options.train_rank_ic_threshold,
         validation_threshold=options.validation_rank_ic_threshold,
+        test_threshold=options.test_rank_ic_audit_threshold,
         include_seed_factors=options.include_seed_factors,
     )
-    pending = [
-        row
-        for row in payload["factors"]
-        if row["validation_status"] in {"validation_pending", "validation_failed"}
-    ]
+    pending = [row for row in payload["factors"] if row["test_rank_ic"] is None]
     if options.limit is not None:
         pending = pending[: options.limit]
     preview = {
-        "pending_unique_factors": len(pending),
-        "validation_only": True,
+        "total_train_qualified": len(payload["factors"]),
+        "already_measured_on_test": payload["summary"][
+            "with_retrospective_test_evidence"
+        ],
+        "pending_test": len(pending),
+        "test_is_retrospective_audit_only": True,
+        "test_used_for_admission": False,
         "llm_called": False,
         "search_state_changed": False,
         "output_dir": str(output_dir),
@@ -133,12 +110,12 @@ def main() -> int:
 
     runner_args = _resolved_runner_args(options.config.resolve(), seed=options.seeds[0])
     runner_args.eval_parallel = options.parallel
-    validation_period = Period.from_strings(runner_args.val_start, runner_args.val_end)
+    test_period = Period.from_strings(runner_args.test_start, runner_args.test_end)
     evaluator = build_evaluator(
         runner_args,
         resolve_repo_path(runner_args.alphabench_root),
     )
-    ledger_path = output_dir / "single_factor_validation_ledger.jsonl"
+    ledger_path = output_dir / "single_factor_test_ledger.jsonl"
     completed = 0
     for offset in range(0, len(pending), options.batch_size):
         factor_rows = pending[offset : offset + options.batch_size]
@@ -154,7 +131,7 @@ def main() -> int:
             )
             for row in factor_rows
         ]
-        results = evaluator.evaluate_many(candidates, validation_period)
+        results = evaluator.evaluate_many(candidates, test_period)
         for factor, candidate, result in zip(factor_rows, candidates, results):
             append_jsonl(
                 ledger_path,
@@ -163,14 +140,15 @@ def main() -> int:
                     "canonical": factor["canonical"],
                     "candidate": candidate.to_dict(),
                     "seed": (factor.get("best_train_occurrence") or {}).get("seed"),
-                    "period": validation_period.to_dict(),
-                    "selection_basis": {
+                    "period": test_period.to_dict(),
+                    "audit_basis": {
                         "split": "Train",
                         "metric": "rank_ic",
                         "threshold": options.train_rank_ic_threshold,
                     },
-                    "validation": result.to_dict(),
-                    "test_evaluated": False,
+                    "test": result.to_dict(),
+                    "retrospective_audit_only": True,
+                    "used_for_admission": False,
                 },
             )
             completed += 1
@@ -178,6 +156,7 @@ def main() -> int:
             json.dumps(
                 {
                     "progress": f"{completed}/{len(pending)}",
+                    "successful_in_batch": sum(result.success for result in results),
                     "ledger": str(ledger_path),
                 },
                 ensure_ascii=False,
@@ -190,6 +169,7 @@ def main() -> int:
         output_dir=output_dir,
         train_threshold=options.train_rank_ic_threshold,
         validation_threshold=options.validation_rank_ic_threshold,
+        test_threshold=options.test_rank_ic_audit_threshold,
         include_seed_factors=options.include_seed_factors,
     )
     write_single_factor_library(output_dir, final_payload)

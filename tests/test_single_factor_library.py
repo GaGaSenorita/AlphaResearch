@@ -105,6 +105,9 @@ def test_library_deduplicates_and_never_admits_on_test(tmp_path: Path) -> None:
         "validation_failed": 0,
         "validation_below_threshold": 1,
         "with_retrospective_test_evidence": 2,
+        "pending_retrospective_test": 0,
+        "retrospective_test_at_least_threshold": 1,
+        "train_validation_test_at_least_threshold": 0,
     }
     by_name = {row["name"]: row for row in payload["factors"]}
     assert by_name["A"]["admitted"] is True
@@ -140,3 +143,5 @@ def test_extra_validation_ledger_and_writers(tmp_path: Path) -> None:
     assert (output / "single_factor_library.json").is_file()
     assert (output / "single_factor_library.csv").is_file()
     assert json.loads((output / "admitted_factors.json").read_text())["factor_count"] == 1
+    assert (output / "test_audit_over_threshold.csv").is_file()
+    assert (output / "three_split_audit_over_threshold.csv").is_file()

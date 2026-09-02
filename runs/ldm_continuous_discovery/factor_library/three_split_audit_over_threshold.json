@@ -1,0 +1,481 @@
+{
+  "factor_count": 4,
+  "factors": [
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 154,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+        "name": "VOL_ADJ_UPPER_SHADOW",
+        "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+        "refill_batch": 1,
+        "round_id": 38,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.01067716319703419,
+          "icir": 0.07876294080635914,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.04414990317572492,
+          "rank_icir": 0.2741538691761206,
+          "turnover": 0.7084421534405987
+        }
+      },
+      "best_train_rank_ic": 0.04414990317572492,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Add(1e-12,Std(Sub(Div($close,Ref($close,1)),1),20)))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+      "factor_id": "10ac4bad5197631c",
+      "name": "VOL_ADJ_UPPER_SHADOW",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 154,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+          "name": "VOL_ADJ_UPPER_SHADOW",
+          "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+          "refill_batch": 1,
+          "round_id": 38,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.01067716319703419,
+            "icir": 0.07876294080635914,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04414990317572492,
+            "rank_icir": 0.2741538691761206,
+            "turnover": 0.7084421534405987
+          }
+        }
+      ],
+      "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+      "source": "ldm",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.01890310373254469,
+            "icir": 0.1205604106436257,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04843811082577804,
+            "rank_icir": 0.27199474983122013,
+            "turnover": 0.7204843001367336
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.04843811082577804,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.016298733884064866,
+            "icir": 0.1309106046665613,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05313152805266665,
+            "rank_icir": 0.33825420086544733,
+            "turnover": 0.661911550635046
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.05313152805266665,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 189,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Mean(Abs($close / Ref($close, 1) - 1), 20) + 1e-12)",
+        "name": "UPPER_SHADOW_LOW_VOLATILITY",
+        "reason": "A large upper shadow on a low absolute-return day signals intraday selling pressure without broad volatility, so next-day mean reversion is stronger.",
+        "refill_batch": 1,
+        "round_id": 49,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 3,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.01031241898865923,
+          "icir": 0.07516702893732241,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.04390368131767869,
+          "rank_icir": 0.27060467675770744,
+          "turnover": 0.7077839428145167
+        }
+      },
+      "best_train_rank_ic": 0.04390368131767869,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Add(1e-12,Mean(Abs(Sub(Div($close,Ref($close,1)),1)),20)))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Mean(Abs($close / Ref($close, 1) - 1), 20) + 1e-12)",
+      "factor_id": "a0a71297c0969b66",
+      "name": "UPPER_SHADOW_LOW_VOLATILITY",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 189,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Mean(Abs($close / Ref($close, 1) - 1), 20) + 1e-12)",
+          "name": "UPPER_SHADOW_LOW_VOLATILITY",
+          "reason": "A large upper shadow on a low absolute-return day signals intraday selling pressure without broad volatility, so next-day mean reversion is stronger.",
+          "refill_batch": 1,
+          "round_id": 49,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 3,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.01031241898865923,
+            "icir": 0.07516702893732241,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04390368131767869,
+            "rank_icir": 0.27060467675770744,
+            "turnover": 0.7077839428145167
+          }
+        }
+      ],
+      "reason": "A large upper shadow on a low absolute-return day signals intraday selling pressure without broad volatility, so next-day mean reversion is stronger.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.01928363472693149,
+            "icir": 0.12246894399908993,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04929663197646616,
+            "rank_icir": 0.2755380272606482,
+            "turnover": 0.7287641647031428
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_test_ledger.jsonl"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.04929663197646616,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.016236264517617546,
+            "icir": 0.12986085803953618,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05261841997303481,
+            "rank_icir": 0.33087884786659494,
+            "turnover": 0.658401750172599
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.05261841997303481,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 187,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / ((Std($close / Ref($close, 1) - 1, 20) + 1e-12) * (($volume / (Mean($volume, 20) + 1e-12)) + 1e-12))",
+        "name": "UPPER_SHADOW_LOW_VOL_LOW_VOLUME",
+        "reason": "Upper shadows reflect intraday selling pressure, and when they occur under low return volatility and low relative volume the selling is likely weak, leading to a next-day reversal.",
+        "refill_batch": 1,
+        "round_id": 49,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.010578483337457183,
+          "icir": 0.07936743819904205,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.053578707531059734,
+          "rank_icir": 0.33585267855327716,
+          "turnover": 0.690488006993944
+        }
+      },
+      "best_train_rank_ic": 0.053578707531059734,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Mul(Add(1e-12,Div($volume,Add(1e-12,Mean($volume,20)))),Add(1e-12,Std(Sub(Div($close,Ref($close,1)),1),20))))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / ((Std($close / Ref($close, 1) - 1, 20) + 1e-12) * (($volume / (Mean($volume, 20) + 1e-12)) + 1e-12))",
+      "factor_id": "0af0c8d24c2e381d",
+      "name": "UPPER_SHADOW_LOW_VOL_LOW_VOLUME",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 187,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) / ((Std($close / Ref($close, 1) - 1, 20) + 1e-12) * (($volume / (Mean($volume, 20) + 1e-12)) + 1e-12))",
+          "name": "UPPER_SHADOW_LOW_VOL_LOW_VOLUME",
+          "reason": "Upper shadows reflect intraday selling pressure, and when they occur under low return volatility and low relative volume the selling is likely weak, leading to a next-day reversal.",
+          "refill_batch": 1,
+          "round_id": 49,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.010578483337457183,
+            "icir": 0.07936743819904205,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.053578707531059734,
+            "rank_icir": 0.33585267855327716,
+            "turnover": 0.690488006993944
+          }
+        }
+      ],
+      "reason": "Upper shadows reflect intraday selling pressure, and when they occur under low return volatility and low relative volume the selling is likely weak, leading to a next-day reversal.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.018700352419011232,
+            "icir": 0.1252828450728826,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05036932906600274,
+            "rank_icir": 0.29660667307574984,
+            "turnover": 0.7133107399532137
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_test_ledger.jsonl"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.05036932906600274,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.014907504942553136,
+            "icir": 0.12055886854941056,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.0523916611050616,
+            "rank_icir": 0.338312224816145,
+            "turnover": 0.6402179587692537
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.0523916611050616,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 286,
+        "expression": "((($high - $close) / ($high - $low + 1e-12)) * (1 - Rank($volume, 20))) / ((Std(($close / (Ref($close, 1) + 1e-12)) - 1, 20)) + 1e-12)",
+        "name": "UPPER_SHADOW_LOW_VOLUME_RANK_RETVOL",
+        "reason": "Stocks with upper shadows and low current volume rank tend to have exhausted intraday selling pressure and revert upward next day, especially when recent return volatility is low.",
+        "refill_batch": 1,
+        "round_id": 82,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.011891458015944285,
+          "icir": 0.09624958496979151,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05450182946065291,
+          "rank_icir": 0.36679391518144355,
+          "turnover": 0.6898820321680619
+        }
+      },
+      "best_train_rank_ic": 0.05450182946065291,
+      "canonical": "Div(Mul(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Sub(1,Rank($volume,20))),Add(1e-12,Std(Sub(Div($close,Add(1e-12,Ref($close,1))),1),20)))",
+      "expression": "((($high - $close) / ($high - $low + 1e-12)) * (1 - Rank($volume, 20))) / ((Std(($close / (Ref($close, 1) + 1e-12)) - 1, 20)) + 1e-12)",
+      "factor_id": "af7797415d21d9d7",
+      "name": "UPPER_SHADOW_LOW_VOLUME_RANK_RETVOL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 286,
+          "expression": "((($high - $close) / ($high - $low + 1e-12)) * (1 - Rank($volume, 20))) / ((Std(($close / (Ref($close, 1) + 1e-12)) - 1, 20)) + 1e-12)",
+          "name": "UPPER_SHADOW_LOW_VOLUME_RANK_RETVOL",
+          "reason": "Stocks with upper shadows and low current volume rank tend to have exhausted intraday selling pressure and revert upward next day, especially when recent return volatility is low.",
+          "refill_batch": 1,
+          "round_id": 82,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.011891458015944285,
+            "icir": 0.09624958496979151,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05450182946065291,
+            "rank_icir": 0.36679391518144355,
+            "turnover": 0.6898820321680619
+          }
+        }
+      ],
+      "reason": "Stocks with upper shadows and low current volume rank tend to have exhausted intraday selling pressure and revert upward next day, especially when recent return volatility is low.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.0167242119016818,
+            "icir": 0.12634776756982286,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.042911845798871,
+            "rank_icir": 0.28447489537652126,
+            "turnover": 0.705979054320592
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_test_ledger.jsonl"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.042911845798871,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.012725208627825687,
+            "icir": 0.11536741526635105,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04489883026045874,
+            "rank_icir": 0.32222421247916455,
+            "turnover": 0.6468521463556777
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "single_factor_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04489883026045874,
+      "validation_status": "validation_admitted"
+    }
+  ],
+  "schema_version": "alphaldm.single-factor-library.v1",
+  "warning": "post-hoc three-split audit; Test was not used during discovery or formal Validation admission"
+}

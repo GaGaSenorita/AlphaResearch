@@ -122,6 +122,18 @@ python scripts/backfill_single_factor_validation.py
 
 The append-only Validation ledger makes this job safely resumable.
 
+To measure every Train-qualified candidate on Test for a one-time descriptive
+audit, without changing formal library admission, run:
+
+```bash
+python scripts/audit_single_factor_test.py --dry-run
+python scripts/audit_single_factor_test.py
+```
+
+This writes a separate append-only Test ledger and
+`test_audit_over_threshold.*`.  These files are retrospective analysis only;
+they must not be presented as Validation-selected performance.
+
 ## Preserved R100 experiments
 
 The completed continual-discovery result snapshots for seeds 42, 123, and 456
