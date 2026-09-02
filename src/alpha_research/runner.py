@@ -1,0 +1,1065 @@
+#!/usr/bin/env python3
+"""Run an official AlphaBench searcher (CoE or EA) in StaticEnvironment."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+from alpha_research.alphabench_runtime import PINNED_COMMIT, load_alpha158_seeds
+from alpha_research.environments import StaticEnvironment, StaticProtocol
+from alpha_research.evaluator import AlphaBenchFFOEvaluator, MockFactorEvaluator
+from alpha_research.methods.baseline_alphabench_cot import AlphaBenchCoT, MockAlphaBenchSearch
+from alpha_research.naming import (
+    BASELINE_ALPHA158,
+    BASELINE_ALPHABENCH_COT,
+    CANONICAL_METHODS,
+    LDM_COLD_START,
+    LDM_CONTINUOUS_DISCOVERY,
+    LDM_METHODS,
+    LDM_MINIMAL_PROMPT_HARNESS,
+    LDM_PROMPT_HARNESS,
+    LDM_RANKIC_RANKICIR_EHVI,
+    LDM_RANKIC_TURNOVER_EHVI,
+    LDM_SINGLE_FACTOR,
+    LDM_SPLIT_ROBUST_REWARD,
+    standard_output_dir,
+    standard_run_name,
+)
+from alpha_research.types import Period
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_BASE_URL = "https://api.deepseek.com/v1"
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run an official AlphaBench searcher (CoE or EA) in the static protocol."
+    )
+    parser.add_argument("--environment", choices=["static"], default="static")
+    parser.add_argument(
+        "--method",
+        choices=CANONICAL_METHODS,
+        default=BASELINE_ALPHABENCH_COT,
+        help=(
+            "Which search method StaticEnvironment drives. ldm_cold_start is "
+            "ldm_standard "
+            "with an empty D_0: no Alpha158 warm-up, everything else identical. "
+            "ldm_single_factor is ldm_standard with the pool readout removed: the same "
+            "search, delivering the single best factor on validation. "
+            "ldm_split_robust_reward is ldm_standard with the reward replaced by cross-year "
+            "stability of the same daily RankIC series. "
+            "ldm_rankic_rankicir_ehvi fits independent RankIC and RankICIR GPs and "
+            "acquires candidates by two-objective expected hypervolume improvement. "
+            "ldm_rankic_turnover_ehvi applies the same EHVI search to maximise RankIC "
+            "while minimising turnover. "
+            "ldm_continuous_discovery keeps pure LDM search but commits every complete "
+            "round for exact resume and produces staged Validation Top-5 reports."
+        ),
+    )
+    parser.add_argument("--alphabench-root", default="external/AlphaBench")
+    parser.add_argument("--ffo-url", default="http://127.0.0.1:19777")
+    parser.add_argument("--ffo-label", default="close_return")
+    parser.add_argument("--ffo-timeout", type=int, default=600)
+    parser.add_argument("--ffo-topk", type=int, default=50)
+    parser.add_argument("--ffo-n-drop", type=int, default=5)
+    parser.add_argument("--ffo-forward-n", type=int, default=1)
+    parser.add_argument(
+        "--ffo-fast", action=argparse.BooleanOptionalAction, default=True
+    )
+    parser.add_argument(
+        "--ffo-use-cache", action=argparse.BooleanOptionalAction, default=False,
+        help="Use the persistent FFO factor cache. Off by default: the cache-hit "
+             "path returns stored daily IC without re-checking trading-day "
+             "coverage, so only a fresh evaluation is verified end to end.",
+    )
+    parser.add_argument(
+        "--ffo-max-attempts", type=int, default=3,
+        help="Maximum fresh evaluation attempts before a factor is explicitly rejected.",
+    )
+    parser.add_argument("--market", choices=["csi300"], default="csi300")
+    parser.add_argument(
+        "--objective",
+        choices=["ic", "rank_ic", "icir", "rank_icir"],
+        default="rank_ic",
+    )
+    parser.add_argument("--factor-budget", type=int, default=10)
+    parser.add_argument(
+        "--max-correlation",
+        type=float,
+        default=None,
+        help=(
+            "Skip a validation candidate whose daily-IC series correlates above this "
+            "with an already selected factor. Unset keeps plain top-k selection."
+        ),
+    )
+    parser.add_argument(
+        "--eval-parallel",
+        type=int,
+        default=1,
+        help="Concurrent FFO evaluations per evaluate_many call.",
+    )
+    parser.add_argument("--search-rounds", type=int, default=20)
+    parser.add_argument("--accept-threshold", type=float, default=0.0)
+    parser.add_argument("--alphabench-workers", type=int, default=1)
+    parser.add_argument(
+        "--seed-group",
+        choices=["all", "kbar_price"],
+        default="all",
+        help=(
+            "Which Alpha158 seeds to start from. AlphaBench's own searching "
+            "benchmark hands CoT only the kbar and price factors."
+        ),
+    )
+    parser.add_argument(
+        "--search-algorithm",
+        choices=["coe", "ea"],
+        default="coe",
+        help="Which official AlphaBench searcher to run.",
+    )
+    parser.add_argument("--ea-candidates-per-round", type=int, default=30)
+    parser.add_argument("--ea-mutation-rate", type=float, default=0.4)
+    parser.add_argument("--ea-crossover-rate", type=float, default=0.6)
+    parser.add_argument("--ea-pool-size", type=int, default=30)
+    parser.add_argument("--ea-seeds-top-k", type=int, default=12)
+    parser.add_argument(
+        "--chain-batch",
+        type=int,
+        default=8,
+        help="Chains run concurrently per batch; the FFO backend stalls above ~8.",
+    )
+
+    parser.add_argument("--train-start", default="2016-01-01")
+    parser.add_argument("--train-end", default="2020-12-29")
+    parser.add_argument("--val-start", default="2021-01-01")
+    parser.add_argument("--val-end", default="2021-12-29")
+    parser.add_argument("--test-start", default="2022-01-01")
+    parser.add_argument("--test-end", default="2025-12-26")
+
+    parser.add_argument(
+        "--llm-base-url",
+        default=os.environ.get("ALPHARESEARCH_LLM_BASE_URL")
+        or os.environ.get("LLM_BASE_URL")
+        or DEFAULT_BASE_URL,
+    )
+    parser.add_argument(
+        "--llm-model",
+        default=os.environ.get("ALPHARESEARCH_LLM_MODEL") or "deepseek-v4-pro",
+    )
+    parser.add_argument("--llm-api-key-env", default="ALPHARESEARCH_LLM_API_KEY")
+    parser.add_argument("--llm-temperature", type=float, default=0.7)
+    parser.add_argument("--llm-timeout-seconds", type=float, default=120.0)
+    parser.add_argument("--llm-max-tokens", type=int, default=320000)
+    parser.add_argument(
+        "--llm-context-window",
+        type=int,
+        default=1000000,
+        help="Declared model context window recorded in run metadata.",
+    )
+    parser.add_argument(
+        "--llm-reasoning-effort",
+        choices=["none", "high", "max"],
+        default="high",
+    )
+    parser.add_argument(
+        "--llm-thinking",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Explicitly enable or disable provider-native thinking mode. Unset sends "
+            "no provider-specific thinking field."
+        ),
+    )
+    parser.add_argument(
+        "--enable-reason", action=argparse.BooleanOptionalAction, default=True
+    )
+
+    # --- LDM ------------------------------------------------------------
+    # The profiling window is deliberately a tail slice of the training window.
+    # A fingerprint is only worth computing while it stays materially cheaper
+    # than the evaluation it replaces, and cost scales with the window.
+    parser.add_argument(
+        "--qlib-provider-uri",
+        default=str(REPO_ROOT.parent / "quantaalpha_qlib_csi300" / "cn_data"),
+    )
+    parser.add_argument("--profile-start", default=None)
+    parser.add_argument("--profile-end", default=None)
+    parser.add_argument(
+        "--search-objective",
+        choices=[
+            "ic", "rank_ic", "icir", "rank_icir", "late_rank_ic", "split_robust",
+        ],
+        default=None,
+        help=(
+            "Metric the surrogate is trained on. Defaults to --objective. The "
+            "pool is always selected on --objective, so the two can differ."
+        ),
+    )
+    parser.add_argument(
+        "--late-window-fraction",
+        type=float,
+        default=0.25,
+        help="Closing share of the training window used by late_rank_ic.",
+    )
+    parser.add_argument(
+        "--split-embargo-days",
+        type=int,
+        default=60,
+        help=(
+            "Trading days dropped from the head of every calendar year before "
+            "its RankIC is measured, so that a factor's long rolling window "
+            "cannot make one year's score depend on the previous year's data. "
+            "99.6%% of archive expressions use windows of 60 days or less."
+        ),
+    )
+    parser.add_argument(
+        "--split-lambda",
+        type=float,
+        default=0.5,
+        help="Weight on the dispersion penalty in mean_minus_lambda_std.",
+    )
+    parser.add_argument(
+        "--split-aggregator",
+        choices=["mean_minus_lambda_std", "worst", "sign_weighted"],
+        default="mean_minus_lambda_std",
+        help=(
+            "How the per-year scores become one reward. 'worst' is Group-DRO's "
+            "prescription; 'sign_weighted' has no flat-at-zero optimum."
+        ),
+    )
+    parser.add_argument(
+        "--split-min-segment-days",
+        type=int,
+        default=120,
+        help="Days a year must keep after the embargo to be scored at all.",
+    )
+    parser.add_argument(
+        "--split-min-segments",
+        type=int,
+        default=2,
+        help="Scored years required before a candidate gets a finite reward.",
+    )
+    parser.add_argument("--candidates-per-round", type=int, default=8)
+    parser.add_argument("--generator-parallel", type=int, default=8)
+    parser.add_argument("--history-shown", type=int, default=24)
+    parser.add_argument(
+        "--structural-diversity-mode",
+        choices=["off", "diagnostics", "feedback", "reject", "penalty"],
+        default="off",
+        help="Harness-only AST control. 'off' preserves the existing method exactly.",
+    )
+    parser.add_argument(
+        "--behavioral-diversity-mode",
+        choices=["off", "diagnostics", "feedback", "reject", "penalty"],
+        default="off",
+        help="Harness-only Train daily-RankIC control; Validation/Test are never read.",
+    )
+    parser.add_argument(
+        "--structural-similarity-threshold",
+        type=float,
+        default=None,
+        help="Optional archive clustering/reject threshold; unset uses exact parameter-normalized families.",
+    )
+    parser.add_argument(
+        "--behavioral-correlation-threshold",
+        type=float,
+        default=None,
+        help="Optional absolute Train daily-RankIC correlation threshold; unset is diagnostics-only.",
+    )
+    parser.add_argument(
+        "--diversity-penalty-weight",
+        type=float,
+        default=0.0,
+        help="Prompt-example priority penalty only; never changes BO/GP/acquisition or Train scores.",
+    )
+    parser.add_argument("--diversity-feedback-clusters", type=int, default=6)
+    parser.add_argument(
+        "--acquisition",
+        choices=["ucb", "ei", "random", "ehvi"],
+        default="ucb",
+        help=(
+            "random drops the surrogate from the decision; the ablation arm. "
+            "ehvi is reserved for the two ldm_rankic_*_ehvi methods."
+        ),
+    )
+    parser.add_argument("--acquisition-beta", type=float, default=2.0)
+    parser.add_argument("--acquisition-xi", type=float, default=0.01)
+    parser.add_argument(
+        "--ehvi-reference-rank-ic",
+        type=float,
+        default=-0.10,
+        help="RankIC coordinate of the fixed, dominated EHVI reference point.",
+    )
+    parser.add_argument(
+        "--ehvi-reference-rank-icir",
+        type=float,
+        default=-0.50,
+        help="RankICIR coordinate of the fixed, dominated EHVI reference point.",
+    )
+    parser.add_argument(
+        "--ehvi-reference-turnover",
+        type=float,
+        default=1.50,
+        help=(
+            "Turnover coordinate of the fixed EHVI reference point. Because turnover "
+            "is minimised, this must be strictly above every warm-up Pareto value."
+        ),
+    )
+    parser.add_argument(
+        "--ehvi-n-samples",
+        type=int,
+        default=128,
+        help="Independent posterior draws per candidate for Monte Carlo EHVI.",
+    )
+    parser.add_argument("--softmax-temperature", type=float, default=1.0)
+    parser.add_argument(
+        "--diversity-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Weight on distance to the nearest observed fingerprint, added to "
+            "standardised acquisition values. 0 is plain UCB."
+        ),
+    )
+    parser.add_argument(
+        "--evaluate-per-round",
+        type=int,
+        default=1,
+        help=(
+            "Candidates actually sent to the evaluator each round. More "
+            "observations make the surrogate usable sooner but cut the "
+            "evaluations it is meant to save."
+        ),
+    )
+    parser.add_argument(
+        "--ldm-max-refill-batches",
+        type=int,
+        default=8,
+        help=(
+            "Maximum independent LLM proposal batches used to obtain the required "
+            "number of verified RankIC observations in one GP round."
+        ),
+    )
+    parser.add_argument(
+        "--ldm-reference-basket",
+        choices=["alpha158", "none"],
+        default="alpha158",
+        help=(
+            "Frozen basket the *_to_ref fingerprint coordinates are measured "
+            "against. This is the profiler coordinate system, not search data. "
+            "'none' leaves those three coordinates at a constant zero and makes "
+            "a cold-start run entirely free of Alpha158."
+        ),
+    )
+    parser.add_argument("--gp-min-fit-data", type=int, default=20)
+    parser.add_argument(
+        "--gp-lengthscale",
+        type=float,
+        default=None,
+        help=(
+            "Unset uses the median pairwise distance of the standardised "
+            "history. A fixed 0.75 leaves the kernel blind at this width: "
+            "typical standardised distances are around 4, so every pair "
+            "evaluates to zero and the posterior collapses to the prior."
+        ),
+    )
+    parser.add_argument("--gp-noise", type=float, default=0.05)
+    parser.add_argument("--gp-scale", type=float, default=0.25)
+    parser.add_argument("--gp-train-iters", type=int, default=100)
+    parser.add_argument("--gp-lr", type=float, default=0.05)
+    parser.add_argument("--ldm-random-seed", type=int, default=42)
+    parser.add_argument(
+        "--continuous-resume",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Resume ldm_continuous_discovery from its last committed round.",
+    )
+    parser.add_argument(
+        "--continuous-checkpoint-round",
+        action="append",
+        type=int,
+        default=[],
+        help="Repeatable round at which to write a staged Validation Top-5/Test report.",
+    )
+    parser.add_argument(
+        "--continuous-legacy-source",
+        default=None,
+        help="Import a completed ldm_standard run into a NEW continuous run; preserve its history.",
+    )
+    parser.add_argument("--continuous-checkpoint-factor-budget", type=int, default=5)
+    parser.add_argument("--continuous-rank-ic-threshold", type=float, default=0.035)
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=42,
+        help="Recorded replicate seed for deterministic non-LDM methods.",
+    )
+
+    parser.add_argument("--min-observations", type=int, default=30)
+    parser.add_argument(
+        "--out-dir",
+        default=None,
+        help=(
+            "Optional result directory. Its leaf must follow "
+            "method_llm_YYYY-YYYY_seedN; omitted uses runs/<method>/<standard-name>."
+        ),
+    )
+    parser.add_argument("--mock", action="store_true")
+    parser.add_argument("--mock-llm", action="store_true")
+    parser.add_argument("--mock-evaluator", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    return parser.parse_args(argv)
+
+
+def resolve_repo_path(raw: str) -> Path:
+    path = Path(raw).expanduser()
+    return path.resolve() if path.is_absolute() else (REPO_ROOT / path).resolve()
+
+
+def static_protocol(args: argparse.Namespace) -> StaticProtocol:
+    return StaticProtocol(
+        train=Period.from_strings(args.train_start, args.train_end),
+        validation=Period.from_strings(args.val_start, args.val_end),
+        test=Period.from_strings(args.test_start, args.test_end),
+        factor_budget=args.factor_budget,
+        search_rounds=args.search_rounds,
+        objective=args.objective,
+        max_correlation=args.max_correlation,
+    )
+
+
+def build_evaluator(args: argparse.Namespace, alphabench_root: Path):
+    if args.mock or args.mock_evaluator:
+        return MockFactorEvaluator(None, min_observations=args.min_observations)
+    evaluator = AlphaBenchFFOEvaluator(
+        alphabench_root=alphabench_root,
+        base_url=args.ffo_url,
+        market=args.market,
+        label=args.ffo_label,
+        use_cache=args.ffo_use_cache,
+        fast=args.ffo_fast,
+        topk=args.ffo_topk,
+        n_drop=args.ffo_n_drop,
+        timeout=args.ffo_timeout,
+        forward_n=args.ffo_forward_n,
+        max_parallel=args.eval_parallel,
+        max_attempts=args.ffo_max_attempts,
+    )
+    if not evaluator.health_check():
+        raise RuntimeError(
+            f"AlphaBench FFO backend is not healthy at {args.ffo_url}; "
+            "start it with `ppo start backend`"
+        )
+    return evaluator
+
+
+def profile_period(args: argparse.Namespace) -> Period:
+    """Window the fingerprints are measured on.
+
+    Defaults to the last two years of training rather than the whole span: the
+    fingerprint has to stay cheap relative to an evaluation, and it only needs
+    to characterise behaviour, not estimate it precisely.
+    """
+    if args.profile_start and args.profile_end:
+        return Period.from_strings(args.profile_start, args.profile_end)
+    train_end = Period.from_strings(args.train_start, args.train_end).end
+    start = train_end.replace(year=train_end.year - 2)
+    return Period.from_strings(
+        max(start, Period.from_strings(args.train_start, args.train_end).start).isoformat(),
+        train_end.isoformat(),
+    )
+
+
+def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output_dir: Path):
+    from alpha_research.formula import FormulaValidator
+    from alpha_research.llm import OpenAICompatibleChatClient
+    from alpha_research.methods.ldm import AlphaLDM
+    from alpha_research.methods.ldm.generator import CandidateGenerator, MockCandidateGenerator
+    from alpha_research.profile import FactorProfiler, MockFactorProfiler
+
+    validator = FormulaValidator()
+    mock_mode = bool(args.mock or args.mock_evaluator)
+
+    if mock_mode:
+        profiler = MockFactorProfiler()
+    else:
+        # The reference basket is the Alpha158 seed set, frozen for the run:
+        # correlating against a growing pool would make a candidate's
+        # fingerprint depend on when it was proposed. It is a measurement
+        # basis rather than search data, so a cold-start run may keep it; pass
+        # --ldm-reference-basket none to drop it and read three constant zeros.
+        reference_expressions = (
+            []
+            if args.ldm_reference_basket == "none"
+            else [
+                seed.expression
+                for seed in load_alpha158_seeds(alphabench_root, seed_group=args.seed_group)
+            ]
+        )
+        profiler = FactorProfiler(
+            provider_uri=resolve_repo_path(args.qlib_provider_uri),
+            market=args.market,
+            period=profile_period(args),
+            reference_expressions=reference_expressions,
+            validator=validator,
+            min_observations=args.min_observations,
+        )
+
+    if args.mock or args.mock_llm:
+        generator = MockCandidateGenerator(candidates_per_round=args.candidates_per_round)
+    else:
+        generator_class = CandidateGenerator
+        if args.method == LDM_PROMPT_HARNESS:
+            from alpha_research.methods.ldm_prompt_harness import HarnessCandidateGenerator
+            from alpha_research.methods.ldm_prompt_harness.diversity import (
+                DiversityController,
+                DiversitySettings,
+            )
+
+            generator_class = HarnessCandidateGenerator
+            diversity_settings = DiversitySettings(
+                structural_mode=args.structural_diversity_mode,
+                behavioral_mode=args.behavioral_diversity_mode,
+                structural_similarity_threshold=args.structural_similarity_threshold,
+                behavioral_correlation_threshold=args.behavioral_correlation_threshold,
+                penalty_weight=args.diversity_penalty_weight,
+                feedback_clusters=args.diversity_feedback_clusters,
+            )
+            diversity_controller = (
+                DiversityController(
+                    validator=validator,
+                    settings=diversity_settings,
+                    output_dir=output_dir,
+                )
+                if diversity_settings.active
+                else None
+            )
+        else:
+            diversity_controller = None
+        if args.method == LDM_MINIMAL_PROMPT_HARNESS:
+            from alpha_research.methods.ldm_minimal_prompt_harness import (
+                MinimalHarnessCandidateGenerator,
+            )
+
+            generator_class = MinimalHarnessCandidateGenerator
+        generator = generator_class(
+            client=OpenAICompatibleChatClient(
+                base_url=args.llm_base_url,
+                model_name=args.llm_model,
+                api_key_env=args.llm_api_key_env,
+                temperature=args.llm_temperature,
+                timeout_seconds=args.llm_timeout_seconds,
+                max_tokens=args.llm_max_tokens,
+                reasoning_effort=(
+                    None
+                    if args.llm_reasoning_effort == "none"
+                    else args.llm_reasoning_effort
+                ),
+                thinking_enabled=args.llm_thinking,
+                json_mode=True,
+            ),
+            validator=validator,
+            candidates_per_round=args.candidates_per_round,
+            max_parallel=args.generator_parallel,
+            history_shown=args.history_shown,
+            **(
+                {"diversity_controller": diversity_controller}
+                if args.method == LDM_PROMPT_HARNESS
+                else {}
+            ),
+        )
+
+    method_class = AlphaLDM
+    if args.method == LDM_PROMPT_HARNESS:
+        from alpha_research.methods.ldm_prompt_harness import HarnessLDM
+
+        method_class = HarnessLDM
+    elif args.method == LDM_MINIMAL_PROMPT_HARNESS:
+        from alpha_research.methods.ldm_minimal_prompt_harness import MinimalHarnessLDM
+
+        method_class = MinimalHarnessLDM
+    elif args.method == LDM_COLD_START:
+        from alpha_research.methods.ldm_cold_start import AlphaLDMColdStart
+
+        method_class = AlphaLDMColdStart
+    elif args.method == LDM_SINGLE_FACTOR:
+        from alpha_research.methods.ldm_single_factor import SingleFactorLDM
+
+        method_class = SingleFactorLDM
+    elif args.method == LDM_SPLIT_ROBUST_REWARD:
+        from alpha_research.methods.ldm_split_robust_reward import SplitRobustLDM
+
+        method_class = SplitRobustLDM
+    elif args.method == LDM_RANKIC_RANKICIR_EHVI:
+        from alpha_research.methods.ldm_rankic_rankicir_ehvi import (
+            RankICRankICIREHVILDM,
+        )
+
+        method_class = RankICRankICIREHVILDM
+    elif args.method == LDM_RANKIC_TURNOVER_EHVI:
+        from alpha_research.methods.ldm_rankic_turnover_ehvi import (
+            RankICTurnoverEHVILDM,
+        )
+
+        method_class = RankICTurnoverEHVILDM
+    elif args.method == LDM_CONTINUOUS_DISCOVERY:
+        from alpha_research.methods.ldm_continuous_discovery import (
+            ContinuousDiscoveryLDM,
+        )
+
+        method_class = ContinuousDiscoveryLDM
+    return method_class(
+        evaluator=evaluator,
+        profiler=profiler,
+        generator=generator,
+        output_dir=output_dir,
+        alphabench_root=alphabench_root,
+        objective=args.objective,
+        search_objective=args.search_objective,
+        late_window_fraction=args.late_window_fraction,
+        seed_group=args.seed_group,
+        acquisition=args.acquisition,
+        acquisition_beta=args.acquisition_beta,
+        acquisition_xi=args.acquisition_xi,
+        softmax_temperature=args.softmax_temperature,
+        diversity_weight=args.diversity_weight,
+        evaluate_per_round=args.evaluate_per_round,
+        max_refill_batches=args.ldm_max_refill_batches,
+        gp_min_fit_data=args.gp_min_fit_data,
+        gp_lengthscale=args.gp_lengthscale,
+        gp_noise=args.gp_noise,
+        gp_scale=args.gp_scale,
+        gp_train_iters=args.gp_train_iters,
+        gp_lr=args.gp_lr,
+        random_seed=args.ldm_random_seed,
+        **(
+            {"split_settings": split_settings(args)}
+            if args.method == LDM_SPLIT_ROBUST_REWARD
+            else {}
+        ),
+        **(
+            {
+                "resume": args.continuous_resume,
+                "legacy_source": args.continuous_legacy_source,
+                "legacy_expected_protocol": (
+                    {**static_protocol(args).to_dict(), "metadata": public_metadata(args)}
+                    if args.continuous_legacy_source else None
+                ),
+                "checkpoint_rounds": args.continuous_checkpoint_round,
+                "checkpoint_factor_budget": args.continuous_checkpoint_factor_budget,
+                "checkpoint_rank_ic_threshold": args.continuous_rank_ic_threshold,
+                "checkpoint_validation_period": Period.from_strings(
+                    args.val_start, args.val_end
+                ),
+                "checkpoint_test_period": Period.from_strings(
+                    args.test_start, args.test_end
+                ),
+                "checkpoint_max_correlation": args.max_correlation,
+            }
+            if args.method == LDM_CONTINUOUS_DISCOVERY
+            else {}
+        ),
+        **(
+            {
+                "ehvi_reference_rank_ic": args.ehvi_reference_rank_ic,
+                "ehvi_reference_rank_icir": args.ehvi_reference_rank_icir,
+                "ehvi_n_samples": args.ehvi_n_samples,
+            }
+            if args.method == LDM_RANKIC_RANKICIR_EHVI
+            else {}
+        ),
+        **(
+            {
+                "ehvi_reference_rank_ic": args.ehvi_reference_rank_ic,
+                "ehvi_reference_turnover": args.ehvi_reference_turnover,
+                "ehvi_n_samples": args.ehvi_n_samples,
+            }
+            if args.method == LDM_RANKIC_TURNOVER_EHVI
+            else {}
+        ),
+    )
+
+
+def split_settings(args: argparse.Namespace):
+    from alpha_research.methods.ldm_split_robust_reward import SplitSettings
+
+    return SplitSettings(
+        embargo_days=args.split_embargo_days,
+        penalty_lambda=args.split_lambda,
+        aggregator=args.split_aggregator,
+        min_segment_days=args.split_min_segment_days,
+        min_segments=args.split_min_segments,
+    )
+
+
+def build_components(args: argparse.Namespace, output_dir: Path):
+    alphabench_root = resolve_repo_path(args.alphabench_root)
+    evaluator = build_evaluator(args, alphabench_root)
+
+    if args.method in LDM_METHODS:
+        return evaluator, build_ldm(args, evaluator, alphabench_root, output_dir)
+
+    if args.method == BASELINE_ALPHA158:
+        from alpha_research.methods.baseline_alpha158 import Alpha158Baseline
+
+        return evaluator, Alpha158Baseline(
+            evaluator=evaluator,
+            alphabench_root=alphabench_root,
+            objective=args.objective,
+            seed_group=args.seed_group,
+            random_seed=args.random_seed,
+        )
+
+    search_fn = MockAlphaBenchSearch() if args.mock or args.mock_llm else None
+    method = AlphaBenchCoT(
+        evaluator=evaluator,
+        alphabench_root=alphabench_root,
+        output_dir=output_dir,
+        model=args.llm_model,
+        temperature=args.llm_temperature,
+        enable_reason=args.enable_reason,
+        accept_threshold=args.accept_threshold,
+        workers=args.alphabench_workers,
+        chain_batch=args.chain_batch,
+        algorithm=args.search_algorithm,
+        seed_group=args.seed_group,
+        ea_candidates_per_round=args.ea_candidates_per_round,
+        ea_mutation_rate=args.ea_mutation_rate,
+        ea_crossover_rate=args.ea_crossover_rate,
+        ea_pool_size=args.ea_pool_size,
+        ea_seeds_top_k=args.ea_seeds_top_k,
+        llm_base_url=args.llm_base_url,
+        llm_api_key_env=args.llm_api_key_env,
+        search_fn=search_fn,
+    )
+    return evaluator, method
+
+
+def public_metadata(args: argparse.Namespace) -> dict[str, Any]:
+    from alpha_research.llm import effective_model_name
+    from alpha_research.profile import SCHEMA_VERSION as PROFILE_SCHEMA_VERSION
+
+    provider_path = resolve_repo_path(args.qlib_provider_uri)
+    calendar_path = provider_path / "calendars" / "day.txt"
+    calendar_start = None
+    calendar_end = None
+    if calendar_path.is_file():
+        calendar_dates = [
+            line.strip()
+            for line in calendar_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        if calendar_dates:
+            calendar_start = calendar_dates[0]
+            calendar_end = calendar_dates[-1]
+
+    ldm = None
+    if args.method in LDM_METHODS:
+        ldm = {
+            "search_objective": args.search_objective or args.objective,
+            "profile_schema_version": PROFILE_SCHEMA_VERSION,
+            "profile_window": profile_period(args).to_dict(),
+            "profiler": "mock" if args.mock or args.mock_evaluator else "qlib_behavioural",
+            "warm_start": (
+                {"d0_source": None, "seed_group": None}
+                if args.method == LDM_COLD_START
+                else {
+                    "d0_source": "factors.lib.alpha158 (exclude_var=vwap)",
+                    "seed_group": args.seed_group,
+                }
+            ),
+            "reference_basket": (
+                None
+                if args.ldm_reference_basket == "none"
+                else f"factors.lib.alpha158 (exclude_var=vwap, group={args.seed_group})"
+            ),
+            "candidates_per_round": args.candidates_per_round,
+            "acquisition": {
+                "mode": args.acquisition,
+                "beta": args.acquisition_beta,
+                "xi": args.acquisition_xi,
+                "softmax_temperature": args.softmax_temperature,
+                "diversity_weight": args.diversity_weight,
+            },
+            "evaluate_per_round": args.evaluate_per_round,
+            "max_refill_batches": args.ldm_max_refill_batches,
+            "gp": {
+                "kernel": "ScaleKernel(Matern nu=2.5, ARD)",
+                "min_fit_data": args.gp_min_fit_data,
+                "lengthscale": args.gp_lengthscale,
+                "noise": args.gp_noise,
+                "scale": args.gp_scale,
+                "train_iters": args.gp_train_iters,
+                "lr": args.gp_lr,
+            },
+            "random_seed": args.ldm_random_seed,
+            "validation_policy": {
+                "metric": args.objective,
+                "max_abs_daily_metric_correlation": args.max_correlation,
+                "hard_limit": True,
+                "backfill_rejected_factors": False,
+                "require_full_factor_budget": True,
+                # The pool arms report a set-level number the search never
+                # optimised. ldm_single_factor keeps the archive-wide
+                # validation evaluation and drops everything the pool readout
+                # added on top of it, so the reported quantity and the search
+                # objective are the same kind of object.
+                "deliverable": (
+                    "single_factor"
+                    if args.method == LDM_SINGLE_FACTOR
+                    else "equal_weight_rank_pool"
+                ),
+                "correlation_filter_applied": args.method != LDM_SINGLE_FACTOR,
+            },
+        }
+        if args.method == LDM_SPLIT_ROBUST_REWARD:
+            ldm["split_reward"] = split_settings(args).to_dict()
+        if args.method == LDM_RANKIC_RANKICIR_EHVI:
+            ldm["search_objectives"] = ["rank_ic", "rank_icir"]
+            ldm["multi_objective_bo"] = {
+                "surrogate": "independent_gp_per_objective",
+                "acquisition": "monte_carlo_expected_hypervolume_improvement",
+                "objective_directions": ["maximize", "maximize"],
+                "reference_point": [
+                    args.ehvi_reference_rank_ic,
+                    args.ehvi_reference_rank_icir,
+                ],
+                "posterior_samples_per_candidate": args.ehvi_n_samples,
+            }
+        if args.method == LDM_RANKIC_TURNOVER_EHVI:
+            ldm["search_objectives"] = ["rank_ic", "turnover"]
+            ldm["multi_objective_bo"] = {
+                "surrogate": "independent_gp_per_objective",
+                "acquisition": "monte_carlo_expected_hypervolume_improvement",
+                "objective_directions": ["maximize", "minimize"],
+                "reference_point": [
+                    args.ehvi_reference_rank_ic,
+                    args.ehvi_reference_turnover,
+                ],
+                "posterior_samples_per_candidate": args.ehvi_n_samples,
+            }
+        if args.method == LDM_CONTINUOUS_DISCOVERY:
+            ldm["continuous_discovery"] = {
+                "schema_version": "alphaldm.continuous.v1",
+                "resume_enabled": args.continuous_resume,
+                "commit_boundary": "each complete GP round",
+                "checkpoint_rounds": args.continuous_checkpoint_round,
+                "checkpoint_factor_budget": args.continuous_checkpoint_factor_budget,
+                "test_rank_ic_record_threshold": args.continuous_rank_ic_threshold,
+                "factor_order_artifact": "factor_sequence.json",
+                "combination_artifact": "top5_combinations.json",
+                "checkpoint_test_policy": (
+                    "diagnostic_only; never returned to generator, GP, or acquisition"
+                ),
+            }
+            if args.continuous_legacy_source:
+                ldm["continuous_discovery"]["legacy_source"] = str(
+                    resolve_repo_path(args.continuous_legacy_source)
+                )
+                ldm["continuous_discovery"]["legacy_backfill_checkpoints"] = True
+        if args.method == LDM_PROMPT_HARNESS:
+            ldm["prompt_harness"] = {
+                "schema_version": "alphaldm.prompt_harness.v2",
+                "generation_mode": "one_batch_call_per_round",
+                "hypothesis_first": True,
+                "train_only_feedback": "best_plus_top3_bottom3_exact_scores",
+                "higher_is_better_orientation": True,
+                "batch_policy": "approximately_75_percent_refinement_25_percent_exploration",
+                "validation_or_test_in_prompt": False,
+                "diversity_control": {
+                    "schema_version": "alphaldm.diversity.v1",
+                    "structural_mode": args.structural_diversity_mode,
+                    "behavioral_mode": args.behavioral_diversity_mode,
+                    "structural_similarity_threshold": args.structural_similarity_threshold,
+                    "behavioral_correlation_threshold": args.behavioral_correlation_threshold,
+                    "penalty_weight": args.diversity_penalty_weight,
+                    "feedback_clusters": args.diversity_feedback_clusters,
+                    "behavioral_data": "Training daily RankIC series only",
+                    "numeric_ldm_history_modified": False,
+                },
+            }
+        if args.method == LDM_MINIMAL_PROMPT_HARNESS:
+            ldm["minimal_prompt_harness"] = {
+                "schema_version": "alphaldm.minimal_prompt_harness.v1",
+                "generation_mode": "independent_single_candidate_calls",
+                "parallel_calls_per_batch": args.generator_parallel,
+                "hypothesis_first": True,
+                "candidate_fields": [
+                    "name",
+                    "hypothesis",
+                    "implementation_rationale",
+                    "expression",
+                ],
+                "context_policy": "identical_to_pure_ldm",
+                "batch_coordination": False,
+                "llm_exploration_exploitation_quota": None,
+                "top_bottom_summary": False,
+                "motif_feedback": False,
+                "automatic_sign_flip": False,
+                "diversity_controller": False,
+                "validation_or_test_in_prompt": False,
+            }
+    baseline_alpha158 = None
+    if args.method == BASELINE_ALPHA158:
+        baseline_alpha158 = {
+            "library": "factors.lib.alpha158",
+            "exclude_var": "vwap",
+            "candidate_count": 42,
+            "selection": (
+                "validation rank_ic ranking under the configured "
+                f"{args.max_correlation} daily-RankIC correlation boundary"
+            ),
+            "backfill_to_budget": True,
+            "backfill_note": (
+                "The fixed 42-factor library cannot fill the budget under a hard "
+                "boundary, so rejected candidates backfill here where LDM fails closed."
+            ),
+            "random_seed": args.random_seed,
+            "deterministic": True,
+        }
+    return {
+        "method": args.method,
+        "ldm": ldm,
+        "baseline_alpha158": baseline_alpha158,
+        "market": args.market,
+        "objective": args.objective,
+        "max_correlation": args.max_correlation,
+        "qlib_provider": {
+            "uri": str(provider_path),
+            "calendar_start": calendar_start,
+            "calendar_end": calendar_end,
+        },
+        "eval_parallel": args.eval_parallel,
+        "evaluator": "mock" if args.mock or args.mock_evaluator else "alphabench_ffo",
+        "ffo": {
+            "url": args.ffo_url,
+            "label": args.ffo_label,
+            "fast": args.ffo_fast,
+            "topk": args.ffo_topk,
+            "n_drop": args.ffo_n_drop,
+            "forward_n": args.ffo_forward_n,
+            "use_cache": args.ffo_use_cache,
+            "max_attempts": args.ffo_max_attempts,
+            "label_horizon_days": {
+                "close_return": 1,
+                "close_return_lag": 2,
+            }.get(args.ffo_label),
+        },
+        "llm": None if args.method == BASELINE_ALPHA158 else {
+            "backend": "mock" if args.mock or args.mock_llm else "alphabench_official",
+            "base_url": args.llm_base_url,
+            "model": args.llm_model,
+            "effective_model": effective_model_name(
+                args.llm_base_url, args.llm_model
+            ),
+            "api_key_env": args.llm_api_key_env,
+            "temperature": args.llm_temperature,
+            "timeout_seconds": args.llm_timeout_seconds,
+            "max_tokens": args.llm_max_tokens,
+            "context_window": args.llm_context_window,
+            "reasoning_effort": args.llm_reasoning_effort,
+            "thinking_enabled": args.llm_thinking,
+        },
+        "alphabench": {
+            "repository": "https://github.com/CityU-MLO/AlphaBench",
+            "commit": PINNED_COMMIT,
+            "root": str(resolve_repo_path(args.alphabench_root)),
+            # LDM borrows AlphaBench only for the Alpha158 seed library; the
+            # search itself is ours, so naming an official searcher here would
+            # misdescribe the run.
+            "algorithm": (
+                None
+                if args.method in LDM_METHODS or args.method == BASELINE_ALPHA158
+                else "searcher.algo.ea.EAAlgo"
+                if args.search_algorithm == "ea"
+                else "searcher.algo.cot.CoTAlgo"
+            ),
+            "ea": {
+                "candidates_per_round": args.ea_candidates_per_round,
+                "mutation_rate": args.ea_mutation_rate,
+                "crossover_rate": args.ea_crossover_rate,
+                "pool_size": args.ea_pool_size,
+                "seeds_top_k": args.ea_seeds_top_k,
+            } if args.method == BASELINE_ALPHABENCH_COT and args.search_algorithm == "ea" else None,
+            # The searcher is AlphaBench's, but the validation gate is LDM's, so
+            # the two methods differ only in how candidates are proposed.
+            "validation_policy": {
+                "metric": args.objective,
+                "max_abs_daily_metric_correlation": args.max_correlation,
+                "hard_limit": True,
+                "backfill_rejected_factors": False,
+                "require_full_factor_budget": True,
+            } if args.method == BASELINE_ALPHABENCH_COT else None,
+            "seed_library": (
+                f"profiler reference basket only (exclude_var=vwap, group={args.seed_group})"
+                if args.method == LDM_COLD_START and args.ldm_reference_basket == "alpha158"
+                else "not used"
+                if args.method == LDM_COLD_START
+                else f"factors.lib.alpha158 (exclude_var=vwap, group={args.seed_group})"
+            ),
+        },
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    if args.factor_budget <= 0:
+        raise ValueError("--factor-budget must be positive")
+    if args.alphabench_workers <= 0:
+        raise ValueError("--alphabench-workers must be positive")
+    seed = args.ldm_random_seed if args.method in LDM_METHODS else args.random_seed
+    expected_run_name = standard_run_name(
+        method=args.method,
+        model=args.llm_model,
+        train_start=args.train_start,
+        test_end=args.test_end,
+        seed=seed,
+    )
+    if args.out_dir is None:
+        output_dir = standard_output_dir(
+            REPO_ROOT,
+            method=args.method,
+            model=args.llm_model,
+            train_start=args.train_start,
+            test_end=args.test_end,
+            seed=seed,
+        )
+    else:
+        output_dir = resolve_repo_path(args.out_dir)
+        if output_dir.name != expected_run_name:
+            raise ValueError(
+                "--out-dir must end with the canonical run name "
+                f"{expected_run_name!r}; got {output_dir.name!r}"
+            )
+    protocol = static_protocol(args)
+    if args.dry_run:
+        print(json.dumps({
+            "status": "dry_run",
+            "protocol": protocol.to_dict(),
+            "metadata": public_metadata(args),
+            "output_dir": str(output_dir),
+        }, indent=2, sort_keys=True))
+        return 0
+
+    evaluator, method = build_components(args, output_dir)
+    summary = StaticEnvironment(
+        protocol=protocol,
+        method=method,
+        evaluator=evaluator,
+        output_dir=output_dir,
+        run_metadata=public_metadata(args),
+    ).run()
+    print(json.dumps({
+        "status": summary["status"],
+        "environment": summary["environment"],
+        "summary": str(output_dir / "summary.json"),
+    }, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

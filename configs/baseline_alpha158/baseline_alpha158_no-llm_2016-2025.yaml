@@ -1,0 +1,24 @@
+name: baseline_alpha158_no-llm_2016-2025
+method: baseline_alpha158
+environment: static
+mode: real
+description: Deterministic Alpha158 baseline under the shared 2016-2025 protocol.
+args:
+  alphabench-root: "{repo_root}/external/AlphaBench"
+  ffo-url: http://127.0.0.1:19777
+  ffo-label: close_return
+  ffo-fast: true
+  no-ffo-use-cache: true
+  ffo-forward-n: 1
+  market: csi300
+  train-start: 2016-01-01
+  train-end: 2020-12-29
+  val-start: 2021-01-01
+  val-end: 2021-12-29
+  test-start: 2022-01-01
+  test-end: 2025-12-26
+  objective: rank_ic
+  factor-budget: 30
+  max-correlation: 0.8
+  search-rounds: 0
+  random-seed: 42

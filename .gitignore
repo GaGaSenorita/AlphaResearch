@@ -1,0 +1,38 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv
+worktrees/
+results/
+queue/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Agent prompt files (generated per-session by launchers)
+CLAUDE.md
+AGENTS.md
+
+# Experimental code/artifacts
+dev/
+
+# Results file
+results.tsv
+
+# Runtime outputs and generated artifacts
+runs/
+
+.vscode
+.DS_Store
+logs/
