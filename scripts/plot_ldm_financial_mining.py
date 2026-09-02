@@ -21,6 +21,7 @@ ORANGE = "#E89B28"
 GREEN = "#2A9D68"
 NAVY = "#17223B"
 MUTED = "#72768A"
+RAW_TEST = "#9A96A6"
 GRID = "#DDD9E7"
 PAPER = "#FBFAF7"
 
@@ -174,6 +175,39 @@ def train_leaders_at_rounds(
     return leaders
 
 
+def retrospective_test_best_so_far(
+    rounds: list[int],
+    values: list[float],
+) -> list[dict[str, Any]]:
+    """Build a labelled cumulative Test envelope without hiding raw audits.
+
+    This is presentation-only post-processing. ``source_round`` makes the
+    hindsight selection explicit and prevents the envelope from being mistaken
+    for a metric observed at every later checkpoint or used by the search.
+    """
+    if len(rounds) != len(values):
+        raise ValueError("Test checkpoint rounds and values must have equal length")
+    records: list[dict[str, Any]] = []
+    best_value = float("-inf")
+    source_round: int | None = None
+    for round_id, raw_value in zip(rounds, values):
+        value = float(raw_value)
+        if not math.isfinite(value):
+            raise ValueError(f"non-finite Test RankIC at checkpoint R{round_id}")
+        improved = value > best_value
+        if improved:
+            best_value = value
+            source_round = int(round_id)
+        records.append({
+            "round": int(round_id),
+            "rank_ic": best_value,
+            "source_round": source_round,
+            "raw_rank_ic": value,
+            "improved": improved,
+        })
+    return records
+
+
 def staged_single_test_results(checkpoints: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Collect each staged Top-5 constituent's first recorded single-factor Test result."""
     seen: set[str] = set()
@@ -265,6 +299,10 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
         for row in checkpoints
     ]
+    test_best_records = retrospective_test_best_so_far(
+        checkpoint_rounds, checkpoint_values
+    )
+    test_best_values = [row["rank_ic"] for row in test_best_records]
     last_validated_round = max(
         int(row["checkpoint_round_first_requested"]) for row in validation_rows
     )
@@ -353,27 +391,37 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         ha="right", va="bottom", fontsize=8.7, color=MUTED,
     )
 
+    ax.plot(
+        checkpoint_rounds, checkpoint_values,
+        color=RAW_TEST, linewidth=1.2, linestyle=(0, (2, 3)),
+        marker="o", markersize=5.3, markerfacecolor="white",
+        markeredgewidth=1.4, alpha=0.82, zorder=4,
+        label="Raw measured Test checkpoint",
+    )
     ax.step(
-        checkpoint_rounds, checkpoint_values, where="post",
-        color=TEAL, linewidth=3.0, zorder=4,
-        label="measured Test checkpoint",
+        checkpoint_rounds, test_best_values, where="post",
+        color=TEAL, linewidth=3.0, zorder=5,
+        label="Retrospective Test best-so-far · diagnostic only",
     )
     ax.fill_between(
-        checkpoint_rounds, checkpoint_values, threshold,
+        checkpoint_rounds, test_best_values, threshold,
         step="post", color=TEAL, alpha=0.09, zorder=1,
     )
     ax.scatter(
-        checkpoint_rounds, checkpoint_values,
+        checkpoint_rounds, test_best_values,
         s=92, marker="o", color="white", edgecolor=TEAL,
         linewidth=2.4, zorder=6,
     )
-    for index, (round_id, value) in enumerate(zip(checkpoint_rounds, checkpoint_values)):
-        offset = (0, 13) if index == 0 else (0, -30)
-        vertical = "bottom" if index == 0 else "top"
+    for index, record in enumerate(test_best_records):
+        round_id = int(record["round"])
+        value = float(record["raw_rank_ic"])
+        offset = (0, 13) if index % 2 == 0 else (0, -18)
+        vertical = "bottom" if index % 2 == 0 else "top"
+        color = TEAL if record["improved"] else MUTED
         ax.annotate(
             f"R{round_id}\n{value:.4f}",
             (round_id, value), xytext=offset, textcoords="offset points",
-            ha="center", va=vertical, fontsize=8.6, color=TEAL,
+            ha="center", va=vertical, fontsize=8.3, color=color,
             fontweight="bold",
         )
 
@@ -445,8 +493,10 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     from matplotlib.lines import Line2D
 
     legend_items = [
-        Line2D([0], [0], color=TEAL, marker="o", markerfacecolor="white",
-               markeredgewidth=2, linewidth=2.5, label="Measured Test Top-5"),
+        Line2D([0], [0], color=TEAL, linewidth=2.8,
+               label="Retrospective Test best-so-far"),
+        Line2D([0], [0], color=RAW_TEST, marker="o", markerfacecolor="white",
+               linewidth=1.2, linestyle="--", label="Raw measured Test Top-5"),
         Line2D([0], [0], color=PURPLE, marker="D", linewidth=0,
                label="New Validation Top-5 factor"),
         Line2D([0], [0], color=ORANGE, marker="^", linewidth=0,
@@ -454,12 +504,12 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     ]
     fig.legend(
         handles=legend_items, loc="lower center", bbox_to_anchor=(0.5, 0.035),
-        ncol=3, frameon=False, fontsize=8.2, handlelength=2.2,
+        ncol=4, frameon=False, fontsize=8.0, handlelength=2.2,
         columnspacing=1.8,
     )
     fig.text(
         0.94, 0.724,
-        "Validation selects; Test reports only · no Test feedback enters search",
+        "Validation selects; raw Test reports only · best-so-far is retrospective",
         ha="right", va="bottom", fontsize=7.8,
         color=MUTED,
     )
@@ -480,6 +530,7 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         "factor_count": factor_count,
         "checkpoint_rounds": checkpoint_rounds,
         "checkpoint_test_rank_ic": checkpoint_values,
+        "retrospective_test_best_so_far": test_best_records,
         "important_events": plotted_events,
         "data_dir": str(data_dir.resolve()),
         "outputs": {kind: str(path.resolve()) for kind, path in paths.items()},
@@ -508,6 +559,8 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
         for row in checkpoints
     ]
+    test_best_records = retrospective_test_best_so_far(test_rounds, test_values)
+    test_best_values = [row["rank_ic"] for row in test_best_records]
 
     milestone_rounds = list(range(0, snapshot_round + 1, 10))
     if not milestone_rounds or milestone_rounds[-1] != snapshot_round:
@@ -571,18 +624,30 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         color=ORANGE, alpha=0.035, zorder=0,
     )
 
-    # Test points are shown only where a Validation-selected Top-5 was actually tested.
+    # Keep every actual Test audit visible. The strong line is a labelled
+    # retrospective envelope, never a search or checkpoint-selection signal.
     ax.plot(
         test_rounds, test_values,
-        color=TEAL, linewidth=2.9, marker="o", markersize=8.3,
-        markerfacecolor="white", markeredgewidth=2.4,
-        zorder=7, label="Measured Validation-selected Top-5 Test",
+        color=RAW_TEST, linewidth=1.2, linestyle=(0, (2, 3)),
+        marker="o", markersize=5.6, markerfacecolor="white",
+        markeredgewidth=1.4, alpha=0.85, zorder=6,
+        label="Raw measured Validation-selected Top-5 Test",
     )
-    for round_id, value in zip(test_rounds, test_values):
+    ax.step(
+        test_rounds, test_best_values, where="post",
+        color=TEAL, linewidth=2.9, zorder=7,
+        label="Retrospective Test best-so-far · diagnostic only",
+    )
+    for index, record in enumerate(test_best_records):
+        round_id = int(record["round"])
+        value = float(record["raw_rank_ic"])
+        above = index % 2 == 0
         ax.annotate(
             f"R{round_id}  {value:.4f}",
-            (round_id, value), xytext=(0, 13), textcoords="offset points",
-            ha="center", va="bottom", fontsize=8.7, color=TEAL,
+            (round_id, value), xytext=(0, 12 if above else -15),
+            textcoords="offset points", ha="center",
+            va="bottom" if above else "top", fontsize=8.4,
+            color=TEAL if record["improved"] else MUTED,
             fontweight="bold", zorder=9,
         )
 
@@ -628,7 +693,7 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     )
     ax.text(
         0.995, 1.018,
-        "Validation selects; Test reports only · no Test feedback enters search",
+        "Validation selects; raw Test reports only · best-so-far is retrospective",
         transform=ax.transAxes, ha="right", va="bottom",
         fontsize=8.5, color=MUTED,
     )
@@ -658,6 +723,7 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
             {"round": round_id, "rank_ic": value}
             for round_id, value in zip(test_rounds, test_values)
         ],
+        "retrospective_test_best_so_far": test_best_records,
         "threshold": threshold,
         "data_dir": str(data_dir.resolve()),
         "outputs": {kind: str(path.resolve()) for kind, path in paths.items()},
@@ -693,6 +759,8 @@ def draw_trajectory_with_single_test(
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
         for row in checkpoints
     ]
+    test_best_records = retrospective_test_best_so_far(test_rounds, test_values)
+    test_best_values = [row["rank_ic"] for row in test_best_records]
     single_results = staged_single_test_results(checkpoints)
 
     milestone_rounds = list(range(0, snapshot_round + 1, 10))
@@ -781,7 +849,8 @@ def draw_trajectory_with_single_test(
         fontsize=8.4, color=MUTED,
     )
 
-    # Lower panel: preserve the Top-5 curve and add actual single-factor Test audits.
+    # Lower panel: every raw Validation-selected Top-5 audit stays visible. The
+    # prominent line is only its retrospective cumulative envelope.
     threshold = float(report["qualification"]["threshold"])
     if show_single_test:
         single_values = [row["test_rank_ic"] for row in single_results]
@@ -805,9 +874,15 @@ def draw_trajectory_with_single_test(
     )
     test_ax.plot(
         test_rounds, test_values,
-        color=TEAL, linewidth=2.9, marker="o", markersize=8.0,
-        markerfacecolor="white", markeredgewidth=2.3,
-        zorder=7, label="Validation-selected Top-5 · measured Test",
+        color=RAW_TEST, linewidth=1.15, linestyle=(0, (2, 3)),
+        marker="o", markersize=5.5, markerfacecolor="white",
+        markeredgewidth=1.35, alpha=0.85, zorder=6,
+        label="Validation-selected Top-5 · raw measured Test",
+    )
+    test_ax.step(
+        test_rounds, test_best_values, where="post",
+        color=TEAL, linewidth=3.0, zorder=7,
+        label="Retrospective Test best-so-far · diagnostic only",
     )
     if not show_single_test:
         # A process guide before the first Test checkpoint, explicitly not a metric.
@@ -846,12 +921,17 @@ def draw_trajectory_with_single_test(
             textcoords="offset points", ha="right", va="bottom",
             fontsize=8.1, color=TEAL, fontweight="bold", zorder=10,
         )
-    for round_id, value in zip(test_rounds, test_values):
+    for index, record in enumerate(test_best_records):
+        round_id = int(record["round"])
+        value = float(record["raw_rank_ic"])
+        above = index % 2 == 0
         test_ax.annotate(
             f"R{round_id}  {value:.4f}",
-            (round_id, value), xytext=(0, 12), textcoords="offset points",
-            ha="center", va="bottom", fontsize=8.4,
-            color=TEAL, fontweight="bold", zorder=10,
+            (round_id, value), xytext=(0, 11 if above else -14),
+            textcoords="offset points", ha="center",
+            va="bottom" if above else "top", fontsize=8.2,
+            color=TEAL if record["improved"] else MUTED,
+            fontweight="bold", zorder=10,
         )
 
     if show_single_test:
@@ -924,7 +1004,7 @@ def draw_trajectory_with_single_test(
     )
     test_ax.text(
         0.995, 1.018,
-        "Test is retrospective audit only · never used for search or selection",
+        "Raw Test audits shown · best-so-far is retrospective and never used for selection",
         transform=test_ax.transAxes, ha="right", va="bottom",
         fontsize=8.4, color=MUTED,
     )
@@ -958,6 +1038,7 @@ def draw_trajectory_with_single_test(
             {"round": round_id, "rank_ic": value}
             for round_id, value in zip(test_rounds, test_values)
         ],
+        "retrospective_test_best_so_far": test_best_records,
         "single_factor_points_displayed": show_single_test,
         "staged_single_factor_test_results": single_results if show_single_test else [],
         "illustrative_projection": (

@@ -84,7 +84,7 @@ class _Evaluator:
         return self._result("Pool(" + ",".join(f.expression for f in factors) + ")", period)
 
 
-def _method(tmp_path, evaluator, *, resume):
+def _method(tmp_path, evaluator, *, resume, checkpoint_rounds=()):
     return ContinuousDiscoveryLDM(
         evaluator=evaluator,
         profiler=_Profiler(),
@@ -95,7 +95,7 @@ def _method(tmp_path, evaluator, *, resume):
         evaluate_per_round=1,
         random_seed=7,
         resume=resume,
-        checkpoint_rounds=(),
+        checkpoint_rounds=checkpoint_rounds,
         checkpoint_factor_budget=2,
         checkpoint_rank_ic_threshold=0.035,
         checkpoint_validation_period=Period.from_strings("2021-01-01", "2021-12-29"),
@@ -150,4 +150,43 @@ def test_continuous_ldm_refuses_to_resume_backwards(tmp_path):
             train_period=train,
             rounds=1,
             seed_factors=(seed,),
+        )
+
+
+def test_round_zero_and_dense_checkpoints_can_be_backfilled_from_sequence(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    seeds = (
+        FactorCandidate("SEED_CLOSE", "$close", source="seed"),
+        FactorCandidate("SEED_OPEN", "$open", source="seed"),
+    )
+    method = _method(
+        tmp_path,
+        _Evaluator(),
+        resume=True,
+        checkpoint_rounds=(0, 1, 2),
+    )
+    method.search(train_period=train, rounds=2, seed_factors=seeds)
+
+    # Direct search writes checkpoints strictly before the target; the static
+    # environment normally writes the target itself during final reporting.
+    report = json.loads((tmp_path / "top5_combinations.json").read_text())
+    assert [row["checkpoint_round"] for row in report["checkpoints"]] == [0, 1]
+    assert [row["available_factor_count"] for row in report["checkpoints"]] == [2, 3]
+
+    events = []
+    method.backfill_checkpoint_reports_from_sequence(event_sink=events.append)
+    report = json.loads((tmp_path / "top5_combinations.json").read_text())
+    assert [row["checkpoint_round"] for row in report["checkpoints"]] == [0, 1, 2]
+    assert [row["available_factor_count"] for row in report["checkpoints"]] == [2, 3, 4]
+    assert events[0]["reporting_only"] is True
+    assert events[-1]["event"] == "ldm_continuous_reporting_backfill_completed"
+
+
+def test_negative_checkpoint_round_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match="cannot be negative"):
+        _method(
+            tmp_path,
+            _Evaluator(),
+            resume=True,
+            checkpoint_rounds=(-1, 0, 10),
         )

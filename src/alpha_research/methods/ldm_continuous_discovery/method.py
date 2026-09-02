@@ -159,9 +159,14 @@ class ContinuousDiscoveryLDM(AlphaLDM):
         self.legacy_expected_protocol = legacy_expected_protocol
         if self.legacy_source is not None and not self.resume:
             raise ValueError("legacy import requires continuous resume enabled")
-        self.checkpoint_rounds = tuple(sorted({
-            int(value) for value in checkpoint_rounds if int(value) > 0
-        }))
+        requested_checkpoints = {int(value) for value in checkpoint_rounds}
+        if any(value < 0 for value in requested_checkpoints):
+            raise ValueError("continuous checkpoint rounds cannot be negative")
+        # Round zero is the measured Alpha158 warm-start baseline. Keeping it as
+        # a first-class checkpoint makes the later R10/R20/... trajectory start
+        # from an actual Validation-selected Top-5 rather than an interpolated
+        # or visually implied Test value.
+        self.checkpoint_rounds = tuple(sorted(requested_checkpoints))
         self.checkpoint_factor_budget = max(1, int(checkpoint_factor_budget))
         self.checkpoint_rank_ic_threshold = float(checkpoint_rank_ic_threshold)
         if not math.isfinite(self.checkpoint_rank_ic_threshold):
@@ -348,21 +353,31 @@ class ContinuousDiscoveryLDM(AlphaLDM):
             "gp_observations": history.n,
             "llm_calls_completed": state.llm_calls_completed,
         })
-        if self.legacy_source is not None:
-            # Retrospective reports are filtered to the archive available then.
-            # They never enter the restored generator/GP state.
-            for checkpoint_round in self.checkpoint_rounds:
-                if checkpoint_round > completed_round or checkpoint_round >= int(rounds):
-                    continue
-                emit({
-                    "event": "ldm_continuous_backfill_checkpoint_started",
-                    "checkpoint_round": checkpoint_round,
-                    "completed_round": completed_round,
-                })
-                self._evaluate_checkpoint(
-                    checkpoint_round=checkpoint_round, archive=archive,
-                    event_sink=emit, cycle_id=cycle_id,
-                )
+        # Reporting policy is deliberately absent from the resume signature:
+        # adding a denser audit schedule must not change or invalidate the
+        # already committed search trajectory. On any resume, fill missing
+        # retrospective checkpoints that are already behind the search head.
+        # The target round itself is written by StaticEnvironment's final
+        # Validation/Test pass, so it is excluded here to avoid duplicate work.
+        existing_checkpoint_rounds = {
+            int(row.get("checkpoint_round", -1))
+            for row in self._report_payload().get("checkpoints", [])
+        }
+        for checkpoint_round in self.checkpoint_rounds:
+            if checkpoint_round in existing_checkpoint_rounds:
+                continue
+            if checkpoint_round > completed_round or checkpoint_round >= int(rounds):
+                continue
+            emit({
+                "event": "ldm_continuous_backfill_checkpoint_started",
+                "checkpoint_round": checkpoint_round,
+                "completed_round": completed_round,
+                "reporting_only": True,
+            })
+            self._evaluate_checkpoint(
+                checkpoint_round=checkpoint_round, archive=archive,
+                event_sink=emit, cycle_id=cycle_id,
+            )
         return state
 
     def _persist_search_checkpoint(
@@ -642,6 +657,104 @@ class ContinuousDiscoveryLDM(AlphaLDM):
         payload["qualifying_combinations"] = [row for row in rows if row.get("qualifies")]
         path = self.output_dir / "top5_combinations.json"
         write_json(path, payload)
+        return path
+
+    def backfill_checkpoint_reports_from_sequence(
+        self,
+        *,
+        event_sink: EventSink | None = None,
+        cycle_id: str = "retrospective-checkpoint-backfill",
+    ) -> Path:
+        """Backfill reporting-only checkpoints from a saved factor sequence.
+
+        Unlike search resume, this path does not need ``factor_ledger.jsonl`` or
+        GP features. It is intended for recovered result snapshots: candidates
+        are reconstructed in committed evaluation order, then each requested
+        round selects Top-5 strictly on Validation and measures Test once. No
+        value produced here is returned to generation, GP fitting, acquisition,
+        or checkpoint selection.
+        """
+        emit = event_sink or (lambda _event: None)
+        sequence_path = self.output_dir / "factor_sequence.json"
+        state_path = self.output_dir / "resume_state.json"
+        if not sequence_path.is_file() or not state_path.is_file():
+            raise FileNotFoundError(
+                "checkpoint backfill requires factor_sequence.json and "
+                "resume_state.json"
+            )
+        sequence_payload = read_json(sequence_path)
+        state = read_json(state_path)
+        completed_round = int(sequence_payload.get("completed_round", state["round_id"]))
+        if completed_round != int(state["round_id"]):
+            raise RuntimeError(
+                "factor sequence and resume state disagree on the completed round"
+            )
+
+        train_period_data = (state.get("signature") or {}).get("train_period")
+        train_period = (
+            Period.from_strings(
+                str(train_period_data["start"]), str(train_period_data["end"])
+            )
+            if isinstance(train_period_data, dict)
+            else self.checkpoint_validation_period
+        )
+        archive: list[tuple[FactorCandidate, EvaluationResult]] = []
+        rows = sorted(
+            sequence_payload.get("factors", []),
+            key=lambda row: int(row["evaluation_index"]),
+        )
+        for row in rows:
+            candidate = _candidate_from_dict(row["candidate"])
+            metrics_data = row.get("train_metrics") or {}
+            metrics = EvaluationMetrics(**{
+                key: metrics_data.get(key)
+                for key in EvaluationMetrics.__dataclass_fields__
+            })
+            archive.append((candidate, EvaluationResult(
+                success=True,
+                expression=candidate.expression,
+                period=train_period,
+                metrics=metrics,
+            )))
+
+        existing_rounds = {
+            int(row.get("checkpoint_round", -1))
+            for row in self._report_payload().get("checkpoints", [])
+        }
+        requested = [
+            checkpoint_round
+            for checkpoint_round in self.checkpoint_rounds
+            if checkpoint_round <= completed_round
+        ]
+        emit({
+            "event": "ldm_continuous_reporting_backfill_started",
+            "cycle_id": cycle_id,
+            "completed_round": completed_round,
+            "requested_checkpoint_rounds": requested,
+            "existing_checkpoint_rounds": sorted(existing_rounds),
+            "reporting_only": True,
+        })
+        for checkpoint_round in requested:
+            if checkpoint_round in existing_rounds:
+                continue
+            self._evaluate_checkpoint(
+                checkpoint_round=checkpoint_round,
+                archive=archive,
+                event_sink=emit,
+                cycle_id=cycle_id,
+            )
+        path = self.output_dir / "top5_combinations.json"
+        final_rounds = [
+            int(row["checkpoint_round"])
+            for row in self._report_payload().get("checkpoints", [])
+        ]
+        emit({
+            "event": "ldm_continuous_reporting_backfill_completed",
+            "cycle_id": cycle_id,
+            "checkpoint_rounds": sorted(final_rounds),
+            "report": str(path),
+            "reporting_only": True,
+        })
         return path
 
     def _evaluate_checkpoint(

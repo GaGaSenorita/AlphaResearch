@@ -5,8 +5,9 @@ mode: real
 description: >
   Resumable pure AlphaLDM discovery pilot on CSI300. Every complete GP round is
   committed, successful factors retain their real evaluation order, and rounds
-  20, 38, 50, 75, and 100 produce Validation-selected Top-5 diagnostic Test
-  reports. Test results never enter generation, GP fitting, or acquisition.
+  0, 10, 20, ..., 100 produce Validation-selected Top-5 diagnostic Test reports.
+  Test results and the retrospective best-so-far display never enter generation,
+  GP fitting, acquisition, or factor/checkpoint selection.
 args:
   alphabench-root: "{repo_root}/external/AlphaBench"
   qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
@@ -52,7 +53,7 @@ args:
   ldm-random-seed: 42
 
   continuous-resume: true
-  continuous-checkpoint-round: [20, 38, 50, 75, 100]
+  continuous-checkpoint-round: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
   continuous-checkpoint-factor-budget: 5
   continuous-rank-ic-threshold: 0.035
 

@@ -92,16 +92,53 @@
       "rank_ic": 0.044955992731750306
     }
   ],
+  "retrospective_test_best_so_far": [
+    {
+      "round": 20,
+      "rank_ic": 0.0325505403236064,
+      "source_round": 20,
+      "raw_rank_ic": 0.0325505403236064,
+      "improved": true
+    },
+    {
+      "round": 38,
+      "rank_ic": 0.04528039862587724,
+      "source_round": 38,
+      "raw_rank_ic": 0.04528039862587724,
+      "improved": true
+    },
+    {
+      "round": 50,
+      "rank_ic": 0.04528039862587724,
+      "source_round": 38,
+      "raw_rank_ic": 0.04323021120841784,
+      "improved": false
+    },
+    {
+      "round": 75,
+      "rank_ic": 0.04528039862587724,
+      "source_round": 38,
+      "raw_rank_ic": 0.045031996129783675,
+      "improved": false
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.04528039862587724,
+      "source_round": 38,
+      "raw_rank_ic": 0.044955992731750306,
+      "improved": false
+    }
+  ],
   "single_factor_points_displayed": false,
   "staged_single_factor_test_results": [],
   "illustrative_projection": null,
   "threshold": 0.035,
   "test_usage": "retrospective audit only; not used for search or selection",
-  "data_dir": "/mnt/data1/fin-autoresearch/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+  "data_dir": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
   "outputs": {
-    "png": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed123_round100.png",
-    "svg": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed123_round100.svg",
-    "pdf": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed123_round100.pdf",
-    "metadata": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed123_round100.json"
+    "png": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.png",
+    "svg": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.svg",
+    "pdf": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.pdf",
+    "metadata": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.json"
   }
 }

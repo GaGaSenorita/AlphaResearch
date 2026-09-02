@@ -17,10 +17,13 @@ Each canonical `ldm_continuous_discovery_*_seed<seed>/` directory contains:
   including each factor's expression and Train metrics;
 - `resume_state.json`: R100 safe state, search signature, GP observation count,
   LLM call count, and encoded RNG state;
-- `top5_combinations.json`: R20/R38/R50/R75/R100 Validation-selected Top-5
-  combinations with measured Validation/Test reports and daily metrics;
-- `figure.{png,svg,pdf}` and `figure_metadata.json`: the corresponding two-panel
-  Train/Test result figure and plotting inputs;
+- `top5_combinations.json`: the preserved R20/R38/R50/R75/R100
+  Validation-selected Top-5 combinations with measured Validation/Test reports
+  and daily metrics; the configured reporting schedule is now R0/R10/.../R100
+  and can be backfilled when the real evaluator is available;
+- `figure.{png,svg,pdf}` and `figure.json`: the corresponding two-panel
+  Train/Test result figure and plotting inputs. The gray points are raw Test
+  audits and the teal step is the explicitly retrospective best-so-far envelope;
 - `legacy_import.json` for seeds 123 and 456, documenting migration of their
   original 38-round histories;
 - `checkpoint_validation_ledger.jsonl` for seed 42, which was copied with its

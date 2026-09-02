@@ -11,6 +11,8 @@ Validation-selected Top-5 Test audits.
 - Train metrics may guide generation, GP fitting, and acquisition.
 - Validation is used only to select the reported factor or factor pool.
 - Test is retrospective reporting only and never feeds back into search.
+- The plotted Test best-so-far envelope is a retrospective diagnostic derived
+  from the raw Test checkpoints; it is never used to select a factor or round.
 - A continuous round is resumable only after its complete commit is present.
 
 ## Included methods
@@ -75,11 +77,24 @@ Each run writes:
 - `factor_ledger.jsonl`: append-only factor evaluations and round commits;
 - `resume_state.json`: last safe round, RNG state, search signature, and GP size;
 - `factor_sequence.json`: every saved factor in real evaluation order;
-- `top5_combinations.json`: checkpoint Validation Top-5 and measured Test audit;
+- `top5_combinations.json`: R0/R10/... checkpoint Validation Top-5 and measured
+  Test audit;
 - `events.jsonl`, `search.json`, `validation_selection.json`, and `summary.json`.
 
 Use `scripts/run_ldm_continuous_discovery.sh TARGET_ROUNDS SEED` on the original
 Linux layout, or invoke the CLI directly with environment-specific paths.
+
+To backfill the denser R0/R10/.../R100 reporting schedule from preserved factor
+sequences without rerunning discovery or calling the LLM, start the real FFO
+evaluator and run:
+
+```bash
+python scripts/backfill_ldm_checkpoint_reports.py --seeds 42 123 456
+```
+
+Use `--dry-run` first to list missing checkpoints. Backfill evaluates and
+selects on Validation, audits the frozen Top-5 on Test, writes a separate
+`checkpoint_backfill_events.jsonl`, and never changes search state.
 
 ## Preserved R100 experiments
 
