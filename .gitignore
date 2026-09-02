@@ -38,6 +38,8 @@ runs/*
 runs/ldm_continuous_discovery/*
 !runs/ldm_continuous_discovery/README.md
 !runs/ldm_continuous_discovery/results_summary.json
+!runs/ldm_continuous_discovery/factor_library/
+!runs/ldm_continuous_discovery/factor_library/**
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/**
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/

@@ -1,0 +1,2008 @@
+{
+  "factor_count": 18,
+  "factors": [
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 154,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+        "name": "VOL_ADJ_UPPER_SHADOW",
+        "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+        "refill_batch": 1,
+        "round_id": 38,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.01067716319703419,
+          "icir": 0.07876294080635914,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.04414990317572492,
+          "rank_icir": 0.2741538691761206,
+          "turnover": 0.7084421534405987
+        }
+      },
+      "best_train_rank_ic": 0.04414990317572492,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Add(1e-12,Std(Sub(Div($close,Ref($close,1)),1),20)))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+      "factor_id": "10ac4bad5197631c",
+      "name": "VOL_ADJ_UPPER_SHADOW",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 154,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+          "name": "VOL_ADJ_UPPER_SHADOW",
+          "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+          "refill_batch": 1,
+          "round_id": 38,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.01067716319703419,
+            "icir": 0.07876294080635914,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04414990317572492,
+            "rank_icir": 0.2741538691761206,
+            "turnover": 0.7084421534405987
+          }
+        }
+      ],
+      "reason": "Normalizing the upper-shadow reversal signal by recent return volatility isolates genuine intraday selling pressure and may improve signal consistency.",
+      "source": "ldm",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.01890310373254469,
+            "icir": 0.1205604106436257,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04843811082577804,
+            "rank_icir": 0.27199474983122013,
+            "turnover": 0.7204843001367336
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.04843811082577804,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.016298733884064866,
+            "icir": 0.1309106046665613,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05313152805266665,
+            "rank_icir": 0.33825420086544733,
+            "turnover": 0.661911550635046
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.05313152805266665,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 274,
+        "expression": "(($high - $low) / ($close + 1e-12)) * (($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+        "name": "HIGH_LOW_RANGE_AMPLIFIED_REVERSAL",
+        "reason": "A wide intraday range with the close near the low and abnormally high dollar volume captures panic liquidation, which tends to reverse next day.",
+        "refill_batch": 1,
+        "round_id": 78,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+        "seed": 456,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.01880307476648079,
+          "icir": 0.11925431600777865,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.058111158297685664,
+          "rank_icir": 0.34209321033132306,
+          "turnover": 1.0382512005446163
+        }
+      },
+      "best_train_rank_ic": 0.058111158297685664,
+      "canonical": "Mul(Div(Mul($close,$volume),Add(1e-12,Mean(Mul($close,$volume),20))),Mul(Div(Sub($high,$low),Add($close,1e-12)),Div(Sub(Add($high,$low),Mul($close,2)),Add(1e-12,Sub($high,$low)))))",
+      "expression": "(($high - $low) / ($close + 1e-12)) * (($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+      "factor_id": "4c95470e773bd60a",
+      "name": "HIGH_LOW_RANGE_AMPLIFIED_REVERSAL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 274,
+          "expression": "(($high - $low) / ($close + 1e-12)) * (($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+          "name": "HIGH_LOW_RANGE_AMPLIFIED_REVERSAL",
+          "reason": "A wide intraday range with the close near the low and abnormally high dollar volume captures panic liquidation, which tends to reverse next day.",
+          "refill_batch": 1,
+          "round_id": 78,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+          "seed": 456,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.01880307476648079,
+            "icir": 0.11925431600777865,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.058111158297685664,
+            "rank_icir": 0.34209321033132306,
+            "turnover": 1.0382512005446163
+          }
+        }
+      ],
+      "reason": "A wide intraday range with the close near the low and abnormally high dollar volume captures panic liquidation, which tends to reverse next day.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.010469867767533407,
+            "icir": 0.06256553580436482,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.027665041080543993,
+            "rank_icir": 0.1408829921732366,
+            "turnover": 1.018508089772669
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.027665041080543993,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.013541717350999032,
+            "icir": 0.09309974250679215,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04939789842714206,
+            "rank_icir": 0.30995240579886657,
+            "turnover": 1.0340581485388143
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04939789842714206,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 297,
+        "expression": "((($high - $close) / (($close - $low) + 1e-12)) * (Mean($volume, 20) / ($volume + 1e-12))) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+        "name": "UPPER_LOWER_SHADOW_VOL_CV",
+        "reason": "Upper-to-lower shadow ratio captures intraday selling versus buying pressure; high values predict next-day rebound, and the volume/volatility adjustment improves signal quality.",
+        "refill_batch": 1,
+        "round_id": 85,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 3,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.0042809632687118805,
+          "icir": 0.04881720457709189,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05995301352635466,
+          "rank_icir": 0.36605587877745527,
+          "turnover": 0.9191556856505563
+        }
+      },
+      "best_train_rank_ic": 0.05995301352635466,
+      "canonical": "Div(Mul(Div(Mean($volume,20),Add($volume,1e-12)),Div(Sub($high,$close),Add(1e-12,Sub($close,$low)))),Add(1e-12,Div(Std(Mul($close,$volume),20),Add(1e-12,Mean(Mul($close,$volume),20)))))",
+      "expression": "((($high - $close) / (($close - $low) + 1e-12)) * (Mean($volume, 20) / ($volume + 1e-12))) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+      "factor_id": "fc10d9e245fb4958",
+      "name": "UPPER_LOWER_SHADOW_VOL_CV",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 297,
+          "expression": "((($high - $close) / (($close - $low) + 1e-12)) * (Mean($volume, 20) / ($volume + 1e-12))) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+          "name": "UPPER_LOWER_SHADOW_VOL_CV",
+          "reason": "Upper-to-lower shadow ratio captures intraday selling versus buying pressure; high values predict next-day rebound, and the volume/volatility adjustment improves signal quality.",
+          "refill_batch": 1,
+          "round_id": 85,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 3,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.0042809632687118805,
+            "icir": 0.04881720457709189,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05995301352635466,
+            "rank_icir": 0.36605587877745527,
+            "turnover": 0.9191556856505563
+          }
+        }
+      ],
+      "reason": "Upper-to-lower shadow ratio captures intraday selling versus buying pressure; high values predict next-day rebound, and the volume/volatility adjustment improves signal quality.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.0009470539889478498,
+            "icir": 0.010905370599636649,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.03682560056655843,
+            "rank_icir": 0.20600878522921912,
+            "turnover": 0.9362534068282314
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.03682560056655843,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": -0.004780239557476687,
+            "icir": -0.05885437247901109,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.049361234437431505,
+            "rank_icir": 0.3238449286346944,
+            "turnover": 0.9381299922315598
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.049361234437431505,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 104,
+        "expression": "(Ref($low, 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+        "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+        "reason": "A drop below the prior day's low on abnormally high volume is a capitulation signal that should reverse the next day.",
+        "refill_batch": 1,
+        "round_id": 21,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 2,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": -0.005191904790153033,
+          "icir": -0.03179029659005288,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.04810581803892827,
+          "rank_icir": 0.2676000988449223,
+          "turnover": 0.6784765621229235
+        }
+      },
+      "best_train_rank_ic": 0.04810581803892827,
+      "canonical": "Mul(Div($volume,Add(1e-12,Ref(Mean($volume,20),1))),Sub(Div(Ref($low,1),$close),1))",
+      "expression": "(Ref($low, 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+      "factor_id": "a2e8bd657e74843e",
+      "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 104,
+          "expression": "(Ref($low, 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+          "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+          "reason": "A drop below the prior day's low on abnormally high volume is a capitulation signal that should reverse the next day.",
+          "refill_batch": 1,
+          "round_id": 21,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 2,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": -0.005191904790153033,
+            "icir": -0.03179029659005288,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04810581803892827,
+            "rank_icir": 0.2676000988449223,
+            "turnover": 0.6784765621229235
+          }
+        }
+      ],
+      "reason": "A drop below the prior day's low on abnormally high volume is a capitulation signal that should reverse the next day.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.006507028790719627,
+            "icir": 0.04768348541277703,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.0492118211154403,
+            "rank_icir": 0.3049202034652573,
+            "turnover": 0.6782375094628688
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.0492118211154403,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 208,
+        "expression": "(($high - $close) / (($close - $low) + 1e-12)) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+        "name": "UPPER_LOWER_SHADOW_RATIO_DV_CV",
+        "reason": "The upper-to-lower shadow ratio captures accelerating selling pressure into the close, and dividing by dollar-volume instability highlights stocks whose liquidity is consistent, improving signal reliability.",
+        "refill_batch": 1,
+        "round_id": 56,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.0029091425655406833,
+          "icir": 0.03234706033717964,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05449114030471125,
+          "rank_icir": 0.34231029911223326,
+          "turnover": 0.9628438551837277
+        }
+      },
+      "best_train_rank_ic": 0.05449114030471125,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($close,$low))),Add(1e-12,Div(Std(Mul($close,$volume),20),Add(1e-12,Mean(Mul($close,$volume),20)))))",
+      "expression": "(($high - $close) / (($close - $low) + 1e-12)) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+      "factor_id": "bf4bad976a46d24a",
+      "name": "UPPER_LOWER_SHADOW_RATIO_DV_CV",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 208,
+          "expression": "(($high - $close) / (($close - $low) + 1e-12)) / ((Std($close * $volume, 20) / (Mean($close * $volume, 20) + 1e-12)) + 1e-12)",
+          "name": "UPPER_LOWER_SHADOW_RATIO_DV_CV",
+          "reason": "The upper-to-lower shadow ratio captures accelerating selling pressure into the close, and dividing by dollar-volume instability highlights stocks whose liquidity is consistent, improving signal reliability.",
+          "refill_batch": 1,
+          "round_id": 56,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.0029091425655406833,
+            "icir": 0.03234706033717964,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05449114030471125,
+            "rank_icir": 0.34231029911223326,
+            "turnover": 0.9628438551837277
+          }
+        }
+      ],
+      "reason": "The upper-to-lower shadow ratio captures accelerating selling pressure into the close, and dividing by dollar-volume instability highlights stocks whose liquidity is consistent, improving signal reliability.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.00018280542099255993,
+            "icir": 0.0021005425323257295,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.03420546044079744,
+            "rank_icir": 0.19148176603341854,
+            "turnover": 0.9656671638603628
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.03420546044079744,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": -0.004846124056790972,
+            "icir": -0.059695337796877766,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04905350395426643,
+            "rank_icir": 0.3313702099816138,
+            "turnover": 0.9793390390195302
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04905350395426643,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 110,
+        "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+        "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+        "reason": "This captures stocks closing near the intraday low on abnormally high trading value, reflecting capitulative selling pressure that tends to reverse next day.",
+        "refill_batch": 1,
+        "round_id": 23,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+        "seed": 456,
+        "selection_order_within_round": 2,
+        "source": "ldm",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.025821155667876773,
+          "icir": 0.1723843691570412,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05338641022185003,
+          "rank_icir": 0.3326981551495712,
+          "turnover": 1.0203024439767014
+        }
+      },
+      "best_train_rank_ic": 0.05338641022185003,
+      "canonical": "Mul(Div(Mul($close,$volume),Add(1e-12,Mean(Mul($close,$volume),20))),Div(Sub(Add($high,$low),Mul($close,2)),Add(1e-12,Sub($high,$low))))",
+      "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+      "factor_id": "7e0d8801ad4203bf",
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 110,
+          "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * (($volume * $close) / (Mean($volume * $close, 20) + 1e-12))",
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "reason": "This captures stocks closing near the intraday low on abnormally high trading value, reflecting capitulative selling pressure that tends to reverse next day.",
+          "refill_batch": 1,
+          "round_id": 23,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+          "seed": 456,
+          "selection_order_within_round": 2,
+          "source": "ldm",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.025821155667876773,
+            "icir": 0.1723843691570412,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05338641022185003,
+            "rank_icir": 0.3326981551495712,
+            "turnover": 1.0203024439767014
+          }
+        }
+      ],
+      "reason": "This captures stocks closing near the intraday low on abnormally high trading value, reflecting capitulative selling pressure that tends to reverse next day.",
+      "source": "ldm",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.014033757216225136,
+            "icir": 0.0848926844969441,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.02654636007868879,
+            "rank_icir": 0.14483060342310705,
+            "turnover": 1.0097885855775517
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.02654636007868879,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.02013357579918698,
+            "icir": 0.14060595902167175,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04842701821695153,
+            "rank_icir": 0.31361700498513984,
+            "turnover": 1.0232681930479137
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04842701821695153,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 78,
+        "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * ($volume / (Mean($volume, 20) + 1e-12))",
+        "name": "INTRADAY_RANGE_REVERSAL_VOLUME",
+        "reason": "Stocks closing near their intraday low with high relative volume are oversold and likely rebound next day, while closing near high with high volume suggests exhausted demand, so this scaled close location within the day's range should be positively related to next-day returns.",
+        "refill_batch": 1,
+        "round_id": 12,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+        "seed": 456,
+        "selection_order_within_round": 3,
+        "source": "ldm",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.024953745561565908,
+          "icir": 0.1678700276220419,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.052797859732256876,
+          "rank_icir": 0.3291268823318858,
+          "turnover": 1.0189214766791042
+        }
+      },
+      "best_train_rank_ic": 0.052797859732256876,
+      "canonical": "Mul(Div($volume,Add(1e-12,Mean($volume,20))),Div(Sub(Add($high,$low),Mul($close,2)),Add(1e-12,Sub($high,$low))))",
+      "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * ($volume / (Mean($volume, 20) + 1e-12))",
+      "factor_id": "f6cc761dc6d9fc70",
+      "name": "INTRADAY_RANGE_REVERSAL_VOLUME",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 78,
+          "expression": "(($high + $low - 2 * $close) / ($high - $low + 1e-12)) * ($volume / (Mean($volume, 20) + 1e-12))",
+          "name": "INTRADAY_RANGE_REVERSAL_VOLUME",
+          "reason": "Stocks closing near their intraday low with high relative volume are oversold and likely rebound next day, while closing near high with high volume suggests exhausted demand, so this scaled close location within the day's range should be positively related to next-day returns.",
+          "refill_batch": 1,
+          "round_id": 12,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+          "seed": 456,
+          "selection_order_within_round": 3,
+          "source": "ldm",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.024953745561565908,
+            "icir": 0.1678700276220419,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.052797859732256876,
+            "rank_icir": 0.3291268823318858,
+            "turnover": 1.0189214766791042
+          }
+        }
+      ],
+      "reason": "Stocks closing near their intraday low with high relative volume are oversold and likely rebound next day, while closing near high with high volume suggests exhausted demand, so this scaled close location within the day's range should be positively related to next-day returns.",
+      "source": "ldm",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.013340027292017281,
+            "icir": 0.08109965665941238,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.02651198220181366,
+            "rank_icir": 0.14460964551771924,
+            "turnover": 1.0073623886046636
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.02651198220181366,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.02014898582781281,
+            "icir": 0.14133212455792082,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04822866905075066,
+            "rank_icir": 0.31320146963505247,
+            "turnover": 1.02168766661246
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            456
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04822866905075066,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 97,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std(($high - $close) / ($high - $low + 1e-12), 20) + 1e-12)",
+        "name": "UPPER_SHADOW_ZSCORE_20",
+        "reason": "Stocks with upper shadows unusually high relative to their own recent distribution signal an intraday failed rally and selling exhaustion, predicting a short-term rebound.",
+        "refill_batch": 1,
+        "round_id": 19,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 1,
+        "source": "ldm",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.027773708472589004,
+          "icir": 0.20422965788513647,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.046947036998654025,
+          "rank_icir": 0.31330161116720895,
+          "turnover": 0.936707008461804
+        }
+      },
+      "best_train_rank_ic": 0.046947036998654025,
+      "canonical": "Div(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Add(1e-12,Std(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),20)))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std(($high - $close) / ($high - $low + 1e-12), 20) + 1e-12)",
+      "factor_id": "cb95cf6aabfadba7",
+      "name": "UPPER_SHADOW_ZSCORE_20",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 97,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std(($high - $close) / ($high - $low + 1e-12), 20) + 1e-12)",
+          "name": "UPPER_SHADOW_ZSCORE_20",
+          "reason": "Stocks with upper shadows unusually high relative to their own recent distribution signal an intraday failed rally and selling exhaustion, predicting a short-term rebound.",
+          "refill_batch": 1,
+          "round_id": 19,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 1,
+          "source": "ldm",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.027773708472589004,
+            "icir": 0.20422965788513647,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.046947036998654025,
+            "rank_icir": 0.31330161116720895,
+            "turnover": 0.936707008461804
+          }
+        }
+      ],
+      "reason": "Stocks with upper shadows unusually high relative to their own recent distribution signal an intraday failed rally and selling exhaustion, predicting a short-term rebound.",
+      "source": "ldm",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            20,
+            38,
+            50
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.017195343776747616,
+            "icir": 0.10770263967904277,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.02784290784757704,
+            "rank_icir": 0.1614042854896576,
+            "turnover": 0.9344325834550775
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.02784290784757704,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            20,
+            38,
+            50
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.028334209948752787,
+            "icir": 0.20941142536029492,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04777456094921392,
+            "rank_icir": 0.32994973985549164,
+            "turnover": 0.953278578509859
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04777456094921392,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 311,
+        "expression": "0 - (($close - $low) / ($high - $low + 1e-12) * (Std($volume, 20) / (Ref(Mean($volume, 20), 1) + 1e-12)))",
+        "name": "CLOSE_LOC_VOL_CV",
+        "reason": "Stocks closing near lows on stable or shrinking volume indicate an orderly, low-panic selloff, which tends to reverse next day.",
+        "refill_batch": 1,
+        "round_id": 90,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 2,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.033682226078097434,
+          "icir": 0.2364293161697127,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.055750569698005424,
+          "rank_icir": 0.35353271658497387,
+          "turnover": 0.8033504149587567
+        }
+      },
+      "best_train_rank_ic": 0.055750569698005424,
+      "canonical": "Sub(0,Mul(Div(Std($volume,20),Add(1e-12,Ref(Mean($volume,20),1))),Div(Sub($close,$low),Add(1e-12,Sub($high,$low)))))",
+      "expression": "0 - (($close - $low) / ($high - $low + 1e-12) * (Std($volume, 20) / (Ref(Mean($volume, 20), 1) + 1e-12)))",
+      "factor_id": "85656e83dba955bb",
+      "name": "CLOSE_LOC_VOL_CV",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 311,
+          "expression": "0 - (($close - $low) / ($high - $low + 1e-12) * (Std($volume, 20) / (Ref(Mean($volume, 20), 1) + 1e-12)))",
+          "name": "CLOSE_LOC_VOL_CV",
+          "reason": "Stocks closing near lows on stable or shrinking volume indicate an orderly, low-panic selloff, which tends to reverse next day.",
+          "refill_batch": 1,
+          "round_id": 90,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 2,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.033682226078097434,
+            "icir": 0.2364293161697127,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.055750569698005424,
+            "rank_icir": 0.35353271658497387,
+            "turnover": 0.8033504149587567
+          }
+        }
+      ],
+      "reason": "Stocks closing near lows on stable or shrinking volume indicate an orderly, low-panic selloff, which tends to reverse next day.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.023875073948350183,
+            "icir": 0.15856102149636817,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.037830063398489086,
+            "rank_icir": 0.2246621495383479,
+            "turnover": 0.8372848351246215
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.037830063398489086,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.022654769240678656,
+            "icir": 0.17297016944807828,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04713152733327596,
+            "rank_icir": 0.32491280744169165,
+            "turnover": 0.8428887549806778
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04713152733327596,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 148,
+        "expression": "0 - (($high - $low) / (Ref(Mean($high - $low, 20), 1) + 1e-12)) * (($close - $low) / ($high - $low + 1e-12))",
+        "name": "RANGE_EXPANSION_CLOSE_LOCATION_REVERSAL",
+        "reason": "Days with both high range expansion and close near the high reflect attention-driven overbought conditions that tend to reverse next day, so the negative sign gives higher scores to fade candidates.",
+        "refill_batch": 1,
+        "round_id": 36,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.022801547225885944,
+          "icir": 0.14776705859872416,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05734530127312695,
+          "rank_icir": 0.34544017106796865,
+          "turnover": 0.9110931852073929
+        }
+      },
+      "best_train_rank_ic": 0.05734530127312695,
+      "canonical": "Sub(0,Mul(Div(Sub($close,$low),Add(1e-12,Sub($high,$low))),Div(Sub($high,$low),Add(1e-12,Ref(Mean(Sub($high,$low),20),1)))))",
+      "expression": "0 - (($high - $low) / (Ref(Mean($high - $low, 20), 1) + 1e-12)) * (($close - $low) / ($high - $low + 1e-12))",
+      "factor_id": "1ab99570bbe8576f",
+      "name": "RANGE_EXPANSION_CLOSE_LOCATION_REVERSAL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 148,
+          "expression": "0 - (($high - $low) / (Ref(Mean($high - $low, 20), 1) + 1e-12)) * (($close - $low) / ($high - $low + 1e-12))",
+          "name": "RANGE_EXPANSION_CLOSE_LOCATION_REVERSAL",
+          "reason": "Days with both high range expansion and close near the high reflect attention-driven overbought conditions that tend to reverse next day, so the negative sign gives higher scores to fade candidates.",
+          "refill_batch": 1,
+          "round_id": 36,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.022801547225885944,
+            "icir": 0.14776705859872416,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05734530127312695,
+            "rank_icir": 0.34544017106796865,
+            "turnover": 0.9110931852073929
+          }
+        }
+      ],
+      "reason": "Days with both high range expansion and close near the high reflect attention-driven overbought conditions that tend to reverse next day, so the negative sign gives higher scores to fade candidates.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.01418161428112884,
+            "icir": 0.08746097667291641,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.03363249875707222,
+            "rank_icir": 0.18858065114458522,
+            "turnover": 0.9269057825289558
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.03363249875707222,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38,
+            50,
+            75
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.02257879187698355,
+            "icir": 0.1616165667419231,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.046384711643719385,
+            "rank_icir": 0.3075152094588834,
+            "turnover": 0.9201146555918179
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl",
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.046384711643719385,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 165,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(($high - $close) / ($high - $low + 1e-12), 1))",
+        "name": "UPPER_SHADOW_PERSIST",
+        "reason": "Two consecutive days of high upper shadow indicate persistent intraday selling pressure that tends to reverse next day, so higher scores predict positive forward returns.",
+        "refill_batch": 2,
+        "round_id": 41,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+        "seed": 123,
+        "selection_order_within_round": 3,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.02174353396500305,
+          "icir": 0.16156371139089934,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.040674662810977195,
+          "rank_icir": 0.27030765871624446,
+          "turnover": 0.5512207039524314
+        }
+      },
+      "best_train_rank_ic": 0.040674662810977195,
+      "canonical": "Mul(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),Ref(Div(Sub($high,$close),Add(1e-12,Sub($high,$low))),1))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(($high - $close) / ($high - $low + 1e-12), 1))",
+      "factor_id": "b218eee4b690ecbd",
+      "name": "UPPER_SHADOW_PERSIST",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 165,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(($high - $close) / ($high - $low + 1e-12), 1))",
+          "name": "UPPER_SHADOW_PERSIST",
+          "reason": "Two consecutive days of high upper shadow indicate persistent intraday selling pressure that tends to reverse next day, so higher scores predict positive forward returns.",
+          "refill_batch": 2,
+          "round_id": 41,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+          "seed": 123,
+          "selection_order_within_round": 3,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.02174353396500305,
+            "icir": 0.16156371139089934,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.040674662810977195,
+            "rank_icir": 0.27030765871624446,
+            "turnover": 0.5512207039524314
+          }
+        }
+      ],
+      "reason": "Two consecutive days of high upper shadow indicate persistent intraday selling pressure that tends to reverse next day, so higher scores predict positive forward returns.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.009627562841232121,
+            "icir": 0.061984069103482045,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.018470186997461027,
+            "rank_icir": 0.1060435065702398,
+            "turnover": 0.5491945750768477
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.018470186997461027,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            50,
+            75,
+            100
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.025506507708478558,
+            "icir": 0.19578781480503302,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04461908088577245,
+            "rank_icir": 0.3162438534207295,
+            "turnover": 0.546819201574045
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            123
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04461908088577245,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 141,
+        "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+        "name": "CLOSE_LOCATION_REVERSAL",
+        "reason": "Stocks closing near the day's low with abnormally high volume are oversold and tend to mean-revert upward on the next day.",
+        "refill_batch": 1,
+        "round_id": 33,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 3,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.02694732068735033,
+          "icir": 0.17551313976611327,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05946269447767831,
+          "rank_icir": 0.3591050240625819,
+          "turnover": 0.8244063055677926
+        }
+      },
+      "best_train_rank_ic": 0.05946269447767831,
+      "canonical": "Sub(0,Mul(Div($volume,Add(1e-12,Ref(Mean($volume,20),1))),Div(Sub($close,$low),Add(1e-12,Sub($high,$low)))))",
+      "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+      "factor_id": "8489082985f472aa",
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 141,
+          "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "reason": "Stocks closing near the day's low with abnormally high volume are oversold and tend to mean-revert upward on the next day.",
+          "refill_batch": 1,
+          "round_id": 33,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 3,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.02694732068735033,
+            "icir": 0.17551313976611327,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05946269447767831,
+            "rank_icir": 0.3591050240625819,
+            "turnover": 0.8244063055677926
+          }
+        }
+      ],
+      "reason": "Stocks closing near the day's low with abnormally high volume are oversold and tend to mean-revert upward on the next day.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.01717855198525069,
+            "icir": 0.12487653835973092,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04429542577184863,
+            "rank_icir": 0.2859810361717518,
+            "turnover": 0.86557730529292
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04429542577184863,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 189,
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(Mean($volume, 20), 1) / ($volume + 1e-12))",
+        "name": "LOW_VOLUME_UPPER_SHADOW",
+        "reason": "Stocks with long upper shadows on low volume indicate weak intraday demand without conviction and tend to rebound the next day.",
+        "refill_batch": 1,
+        "round_id": 49,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 3,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.02067178811605369,
+          "icir": 0.1497805489590499,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.05380083379997329,
+          "rank_icir": 0.3375084892205839,
+          "turnover": 0.8118830623799368
+        }
+      },
+      "best_train_rank_ic": 0.05380083379997329,
+      "canonical": "Mul(Div(Ref(Mean($volume,20),1),Add($volume,1e-12)),Div(Sub($high,$close),Add(1e-12,Sub($high,$low))))",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(Mean($volume, 20), 1) / ($volume + 1e-12))",
+      "factor_id": "4f941ef03d46ac9b",
+      "name": "LOW_VOLUME_UPPER_SHADOW",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 189,
+          "expression": "(($high - $close) / ($high - $low + 1e-12)) * (Ref(Mean($volume, 20), 1) / ($volume + 1e-12))",
+          "name": "LOW_VOLUME_UPPER_SHADOW",
+          "reason": "Stocks with long upper shadows on low volume indicate weak intraday demand without conviction and tend to rebound the next day.",
+          "refill_batch": 1,
+          "round_id": 49,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 3,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.02067178811605369,
+            "icir": 0.1497805489590499,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.05380083379997329,
+            "rank_icir": 0.3375084892205839,
+            "turnover": 0.8118830623799368
+          }
+        }
+      ],
+      "reason": "Stocks with long upper shadows on low volume indicate weak intraday demand without conviction and tend to rebound the next day.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            50
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.019824593603763777,
+            "icir": 0.15163050138259337,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04358339835742824,
+            "rank_icir": 0.2936848110542011,
+            "turnover": 0.8167053718769697
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04358339835742824,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 52,
+        "expression": "Ref(Min($low, 5), 1) / $close",
+        "name": "PREV_5D_MINLOW_OVER_CLOSE",
+        "reason": "Stocks closing below the prior five-day low are at a short-term support break and tend to mean-revert upward, so a higher ratio should predict positive next-day returns.",
+        "refill_batch": 1,
+        "round_id": 4,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": -0.007826514024243536,
+          "icir": -0.04341408296030673,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.041277844730570626,
+          "rank_icir": 0.233036980230583,
+          "turnover": 0.28845371393843316
+        }
+      },
+      "best_train_rank_ic": 0.041277844730570626,
+      "canonical": "Div(Ref(Min($low,5),1),$close)",
+      "expression": "Ref(Min($low, 5), 1) / $close",
+      "factor_id": "c5a055753e682959",
+      "name": "PREV_5D_MINLOW_OVER_CLOSE",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 52,
+          "expression": "Ref(Min($low, 5), 1) / $close",
+          "name": "PREV_5D_MINLOW_OVER_CLOSE",
+          "reason": "Stocks closing below the prior five-day low are at a short-term support break and tend to mean-revert upward, so a higher ratio should predict positive next-day returns.",
+          "refill_batch": 1,
+          "round_id": 4,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": -0.007826514024243536,
+            "icir": -0.04341408296030673,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.041277844730570626,
+            "rank_icir": 0.233036980230583,
+            "turnover": 0.28845371393843316
+          }
+        }
+      ],
+      "reason": "Stocks closing below the prior five-day low are at a short-term support break and tend to mean-revert upward, so a higher ratio should predict positive next-day returns.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.007396654322316905,
+            "icir": 0.045372400963512895,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.042627696641098264,
+            "rank_icir": 0.2579875975901909,
+            "turnover": 0.28714049663682717
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.042627696641098264,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 80,
+        "expression": "Min(Ref($low, 1), 5) / $close",
+        "name": "PRIOR_5D_LOW_OVER_CLOSE",
+        "reason": "Stocks closing below the lowest low of the prior five days are at short-term support and tend to rebound next day, making this ratio positively predictive.",
+        "refill_batch": 1,
+        "round_id": 13,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 2,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": -0.007826514024243536,
+          "icir": -0.04341408296030673,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.041277844730570626,
+          "rank_icir": 0.233036980230583,
+          "turnover": 0.28845371393843316
+        }
+      },
+      "best_train_rank_ic": 0.041277844730570626,
+      "canonical": "Div(Min(Ref($low,1),5),$close)",
+      "expression": "Min(Ref($low, 1), 5) / $close",
+      "factor_id": "d4a5d8a020f1f408",
+      "name": "PRIOR_5D_LOW_OVER_CLOSE",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 80,
+          "expression": "Min(Ref($low, 1), 5) / $close",
+          "name": "PRIOR_5D_LOW_OVER_CLOSE",
+          "reason": "Stocks closing below the lowest low of the prior five days are at short-term support and tend to rebound next day, making this ratio positively predictive.",
+          "refill_batch": 1,
+          "round_id": 13,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 2,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": -0.007826514024243536,
+            "icir": -0.04341408296030673,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.041277844730570626,
+            "rank_icir": 0.233036980230583,
+            "turnover": 0.28845371393843316
+          }
+        }
+      ],
+      "reason": "Stocks closing below the lowest low of the prior five days are at short-term support and tend to rebound next day, making this ratio positively predictive.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.007396654322316905,
+            "icir": 0.045372400963512895,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.042627696641098264,
+            "rank_icir": 0.2579875975901909,
+            "turnover": 0.28714049663682717
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.042627696641098264,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 125,
+        "expression": "(Ref(Min($low, 3), 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+        "name": "PRIOR_3DAY_LOW_BREAK_VOL",
+        "reason": "A close below the prior three-day low on elevated volume signals capitulation and tends to predict a short-term rebound in A-shares.",
+        "refill_batch": 1,
+        "round_id": 28,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 2,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": -0.0045219868796591775,
+          "icir": -0.02675051064854537,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.044316823200978045,
+          "rank_icir": 0.2481150192709268,
+          "turnover": 0.42731743464468863
+        }
+      },
+      "best_train_rank_ic": 0.044316823200978045,
+      "canonical": "Mul(Div($volume,Add(1e-12,Ref(Mean($volume,20),1))),Sub(Div(Ref(Min($low,3),1),$close),1))",
+      "expression": "(Ref(Min($low, 3), 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+      "factor_id": "565466be74a854be",
+      "name": "PRIOR_3DAY_LOW_BREAK_VOL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 125,
+          "expression": "(Ref(Min($low, 3), 1) / $close - 1) * ($volume / (Ref(Mean($volume, 20), 1) + 1e-12))",
+          "name": "PRIOR_3DAY_LOW_BREAK_VOL",
+          "reason": "A close below the prior three-day low on elevated volume signals capitulation and tends to predict a short-term rebound in A-shares.",
+          "refill_batch": 1,
+          "round_id": 28,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 2,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": -0.0045219868796591775,
+            "icir": -0.02675051064854537,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.044316823200978045,
+            "rank_icir": 0.2481150192709268,
+            "turnover": 0.42731743464468863
+          }
+        }
+      ],
+      "reason": "A close below the prior three-day low on elevated volume signals capitulation and tends to predict a short-term rebound in A-shares.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            38
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.006926419788744825,
+            "icir": 0.04894848159569041,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04254635148204155,
+            "rank_icir": 0.2594590019201741,
+            "turnover": 0.4193116163603298
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.04254635148204155,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 172,
+        "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref($volume, 1) + 1e-12))",
+        "name": "CLOSE_LOW_VOL_ACCEL",
+        "reason": "Stocks closing near the daily low with a volume surge relative to the prior day reflect panic selling that tends to revert next day, so the negative composite should relate positively to forward returns.",
+        "refill_batch": 1,
+        "round_id": 44,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.02191420208860281,
+          "icir": 0.15508649234965535,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.049188149672706225,
+          "rank_icir": 0.3045776460773923,
+          "turnover": 1.070192496193755
+        }
+      },
+      "best_train_rank_ic": 0.049188149672706225,
+      "canonical": "Sub(0,Mul(Div($volume,Add(1e-12,Ref($volume,1))),Div(Sub($close,$low),Add(1e-12,Sub($high,$low)))))",
+      "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref($volume, 1) + 1e-12))",
+      "factor_id": "981973106b70ec43",
+      "name": "CLOSE_LOW_VOL_ACCEL",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 172,
+          "expression": "0 - (($close - $low) / ($high - $low + 1e-12)) * ($volume / (Ref($volume, 1) + 1e-12))",
+          "name": "CLOSE_LOW_VOL_ACCEL",
+          "reason": "Stocks closing near the daily low with a volume surge relative to the prior day reflect panic selling that tends to revert next day, so the negative composite should relate positively to forward returns.",
+          "refill_batch": 1,
+          "round_id": 44,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.02191420208860281,
+            "icir": 0.15508649234965535,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.049188149672706225,
+            "rank_icir": 0.3045776460773923,
+            "turnover": 1.070192496193755
+          }
+        }
+      ],
+      "reason": "Stocks closing near the daily low with a volume surge relative to the prior day reflect panic selling that tends to revert next day, so the negative composite should relate positively to forward returns.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [],
+      "test_rank_ic": null,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            50
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.014286519420249603,
+            "icir": 0.10129496089168666,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.042067845178262356,
+            "rank_icir": 0.27224728960391203,
+            "turnover": 1.0522630147148542
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.042067845178262356,
+      "validation_status": "validation_admitted"
+    },
+    {
+      "admitted": true,
+      "best_train_occurrence": {
+        "evaluation_index": 64,
+        "expression": "1 - ($close / $open)",
+        "name": "LOW_INTRADAY_RETURN",
+        "reason": "Stocks with large intraday gains tend to reverse the next day in Chinese A-shares, so a factor rewarding low intraday return should rank positively.",
+        "refill_batch": 1,
+        "round_id": 8,
+        "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+        "seed": 42,
+        "selection_order_within_round": 1,
+        "source": "ldm_continuous_discovery",
+        "train_metrics": {
+          "daily_count": 1216,
+          "ic": 0.010767166604056893,
+          "icir": 0.06457656563826886,
+          "observation_count": 0,
+          "quantile_spread": null,
+          "rank_ic": 0.04315490915243494,
+          "rank_icir": 0.24295215611880666,
+          "turnover": 1.020655876748004
+        }
+      },
+      "best_train_rank_ic": 0.04315490915243494,
+      "canonical": "Sub(1,Div($close,$open))",
+      "expression": "1 - ($close / $open)",
+      "factor_id": "09fc41ffae5a7271",
+      "name": "LOW_INTRADAY_RETURN",
+      "occurrence_count": 1,
+      "occurrences": [
+        {
+          "evaluation_index": 64,
+          "expression": "1 - ($close / $open)",
+          "name": "LOW_INTRADAY_RETURN",
+          "reason": "Stocks with large intraday gains tend to reverse the next day in Chinese A-shares, so a factor rewarding low intraday return should rank positively.",
+          "refill_batch": 1,
+          "round_id": 8,
+          "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+          "seed": 42,
+          "selection_order_within_round": 1,
+          "source": "ldm_continuous_discovery",
+          "train_metrics": {
+            "daily_count": 1216,
+            "ic": 0.010767166604056893,
+            "icir": 0.06457656563826886,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.04315490915243494,
+            "rank_icir": 0.24295215611880666,
+            "turnover": 1.020655876748004
+          }
+        }
+      ],
+      "reason": "Stocks with large intraday gains tend to reverse the next day in Chinese A-shares, so a factor rewarding low intraday return should rank positively.",
+      "source": "ldm_continuous_discovery",
+      "test_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 966,
+            "ic": 0.008053639028063319,
+            "icir": 0.04351625260787685,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.026660706085488435,
+            "rank_icir": 0.1362765991555994,
+            "turnover": 1.022133163654024
+          },
+          "period": {
+            "end": "2025-12-26",
+            "start": "2022-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "test",
+          "success": true
+        }
+      ],
+      "test_rank_ic": 0.026660706085488435,
+      "validation_evidence": [
+        {
+          "checkpoint_rounds": [
+            20
+          ],
+          "error": null,
+          "metrics": {
+            "daily_count": 241,
+            "ic": 0.015974637660600154,
+            "icir": 0.0959893543038252,
+            "observation_count": 0,
+            "quantile_spread": null,
+            "rank_ic": 0.040635460328226736,
+            "rank_icir": 0.23736296144574948,
+            "turnover": 1.0362359231009144
+          },
+          "period": {
+            "end": "2021-12-29",
+            "start": "2021-01-01"
+          },
+          "seeds": [
+            42
+          ],
+          "sources": [
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/checkpoint_validation_ledger.jsonl",
+            "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/top5_combinations.json"
+          ],
+          "split": "validation",
+          "success": true
+        }
+      ],
+      "validation_rank_ic": 0.040635460328226736,
+      "validation_status": "validation_admitted"
+    }
+  ],
+  "policy": {
+    "admission_rule": "Validation RankIC >= 0.04",
+    "candidate_rule": "Train RankIC >= 0.04",
+    "deduplication": "canonical expression across all selected seeds",
+    "include_seed_factors": false,
+    "test_usage": "retrospective audit only; never used for admission"
+  },
+  "schema_version": "alphaldm.single-factor-library.v1",
+  "source_runs": [
+    {
+      "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+      "seed": 42
+    },
+    {
+      "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+      "seed": 123
+    },
+    {
+      "run_name": "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+      "seed": 456
+    }
+  ]
+}

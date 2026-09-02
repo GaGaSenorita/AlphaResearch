@@ -96,6 +96,32 @@ Use `--dry-run` first to list missing checkpoints. Backfill evaluates and
 selects on Validation, audits the frozen Top-5 on Test, writes a separate
 `checkpoint_backfill_events.jsonl`, and never changes search state.
 
+## Single-factor library
+
+Build a cross-seed library of LDM-generated factors whose Train RankIC is at
+least 0.04:
+
+```bash
+python scripts/build_single_factor_library.py --seeds 42 123 456
+```
+
+The complete candidate table and the strict Validation-admitted view are
+written under `runs/ldm_continuous_discovery/factor_library/`.  Formula,
+explanation, seed, round and original evaluation index are retained, and
+canonical expressions are de-duplicated across seeds.  A high Train value only
+creates a candidate; Validation RankIC >= 0.04 is required for admission. Test
+is audit-only and never changes library membership.
+
+If restored market data and the FFO service are available, evaluate only the
+currently missing candidate Validation results (no LLM and no search rerun):
+
+```bash
+python scripts/backfill_single_factor_validation.py --dry-run
+python scripts/backfill_single_factor_validation.py
+```
+
+The append-only Validation ledger makes this job safely resumable.
+
 ## Preserved R100 experiments
 
 The completed continual-discovery result snapshots for seeds 42, 123, and 456
