@@ -1,0 +1,50 @@
+{
+  "method": "ldm_continuous_discovery",
+  "target_round": 100,
+  "test_policy": "retrospective audit only; not used for search or selection",
+  "record_threshold_rank_ic": 0.035,
+  "runs": [
+    {
+      "seed": 42,
+      "directory": "seed42_round100",
+      "factor_count": 342,
+      "history_observations": 342,
+      "llm_calls_total": 988,
+      "checkpoints": [
+        {"round": 20, "validation_rank_ic": 0.04849567, "test_rank_ic": 0.03556028, "qualifies": true},
+        {"round": 38, "validation_rank_ic": 0.05233538, "test_rank_ic": 0.03761907, "qualifies": true},
+        {"round": 50, "validation_rank_ic": 0.05233538, "test_rank_ic": 0.03761907, "qualifies": true},
+        {"round": 75, "validation_rank_ic": 0.05459069, "test_rank_ic": 0.03957906, "qualifies": true},
+        {"round": 100, "validation_rank_ic": 0.05306439, "test_rank_ic": 0.04243189, "qualifies": true}
+      ]
+    },
+    {
+      "seed": 123,
+      "directory": "seed123_round100",
+      "factor_count": 342,
+      "history_observations": 342,
+      "llm_calls_total": 995,
+      "checkpoints": [
+        {"round": 20, "validation_rank_ic": 0.05058984, "test_rank_ic": 0.03255054, "qualifies": false},
+        {"round": 38, "validation_rank_ic": 0.05577793, "test_rank_ic": 0.04528040, "qualifies": true},
+        {"round": 50, "validation_rank_ic": 0.06001029, "test_rank_ic": 0.04323021, "qualifies": true},
+        {"round": 75, "validation_rank_ic": 0.05781959, "test_rank_ic": 0.04503200, "qualifies": true},
+        {"round": 100, "validation_rank_ic": 0.05763833, "test_rank_ic": 0.04495599, "qualifies": true}
+      ]
+    },
+    {
+      "seed": 456,
+      "directory": "seed456_round100",
+      "factor_count": 342,
+      "history_observations": 342,
+      "llm_calls_total": 826,
+      "checkpoints": [
+        {"round": 20, "validation_rank_ic": 0.05268940, "test_rank_ic": 0.03831264, "qualifies": true},
+        {"round": 38, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
+        {"round": 50, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
+        {"round": 75, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
+        {"round": 100, "validation_rank_ic": 0.04730262, "test_rank_ic": 0.03361301, "qualifies": false}
+      ]
+    }
+  ]
+}

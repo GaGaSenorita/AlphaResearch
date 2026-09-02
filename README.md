@@ -81,6 +81,15 @@ Each run writes:
 Use `scripts/run_ldm_continuous_discovery.sh TARGET_ROUNDS SEED` on the original
 Linux layout, or invoke the CLI directly with environment-specific paths.
 
+## Preserved R100 experiments
+
+The completed continual-discovery result snapshots for seeds 42, 123, and 456
+are versioned with this repository under
+`results/ldm_continuous_discovery/`. Each seed directory contains its ordered
+factor sequence, resume state, checkpoint Top-5 Validation/Test reports, and
+PNG/SVG/PDF figure. See the result directory's README and `summary.json` for a
+compact index.
+
 ## Recovery provenance
 
 The reconstruction merged the last locally preserved code snapshots in this

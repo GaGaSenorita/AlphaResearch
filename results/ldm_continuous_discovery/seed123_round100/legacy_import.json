@@ -1,0 +1,24 @@
+{
+  "history_order_preserved": true,
+  "imported_at_unix": 1788194543.174942,
+  "llm_deterministic_reproduction_claimed": false,
+  "new_factor_budget": 5,
+  "rng_policy": "replayed_and_verified",
+  "sampler_choices_verified": 125,
+  "schema_version": "alphaldm.legacy-import.v1",
+  "source_completed_round": 38,
+  "source_dir": "/mnt/data1/fin-autoresearch/AlphaResearch/runs/ldm_standard/ldm_standard_deepseek-v4-pro_2016-2025_seed123",
+  "source_factor_budget": 30,
+  "source_factor_count": 156,
+  "source_sha256": {
+    "events.jsonl": "793d064612d78d7315fe33ef400d3975c4c35fadfe6fdc8470f028daaf3417da",
+    "ldm_history.csv": "3df55aa3fb6543288a6b7ca1c3b28fa135bf02f21f9ca7c93a86c0a17968cdba",
+    "protocol.json": "39aa3e40277be032ebb5b743388fee923b386c7eed024e02ad440af8e348e993",
+    "search.json": "30eb25afc28080c5ea9bd8246394c2ce4aff3be20f0fe2005d5451e4f9bec780",
+    "summary.json": "379eac30a3aef05e0e775bea4d55a0e8fc2c13d7c69c086ea9105b0f42b4b7ef",
+    "validation_selection.json": "22f68dc88c641a4ca03edcf714be8ed1d696d74c500c4a3c051c89e9f6bc6de5"
+  },
+  "source_unchanged": true,
+  "train_observations_reevaluated": false,
+  "validation_imported": 156
+}

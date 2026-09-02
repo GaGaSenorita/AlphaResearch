@@ -12,7 +12,11 @@ wheels/
 # Virtual environments
 .venv
 worktrees/
-results/
+# Generated result directories are ignored by default. The recovered, verified
+# R100 continual-discovery snapshots below are intentionally versioned.
+results/*
+!results/ldm_continuous_discovery/
+!results/ldm_continuous_discovery/**
 queue/
 
 # Local configuration and credentials

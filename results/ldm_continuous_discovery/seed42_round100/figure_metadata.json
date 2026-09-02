@@ -1,0 +1,106 @@
+{
+  "snapshot_round": 100,
+  "factor_count": 342,
+  "train_milestones": [
+    {
+      "round": 0,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 10,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 20,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 30,
+      "factor_round": 21,
+      "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+      "rank_ic": 0.04810581803892827
+    },
+    {
+      "round": 40,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 50,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 60,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 70,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 80,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 90,
+      "factor_round": 89,
+      "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+      "rank_ic": 0.06081372710466161
+    },
+    {
+      "round": 100,
+      "factor_round": 89,
+      "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+      "rank_ic": 0.06081372710466161
+    }
+  ],
+  "measured_top5_test_checkpoints": [
+    {
+      "round": 20,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 38,
+      "rank_ic": 0.03761906847765277
+    },
+    {
+      "round": 50,
+      "rank_ic": 0.03761906847765277
+    },
+    {
+      "round": 75,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.04243188883902932
+    }
+  ],
+  "single_factor_points_displayed": false,
+  "staged_single_factor_test_results": [],
+  "illustrative_projection": null,
+  "threshold": 0.035,
+  "test_usage": "retrospective audit only; not used for search or selection",
+  "data_dir": "/Users/senorita/Desktop/AlphaLDM Project/data/ldm_financial_snapshot_round100",
+  "outputs": {
+    "png": "/Users/senorita/Desktop/AlphaLDM Project/figures/ldm_financial_mining_train_test_final_round100.png",
+    "svg": "/Users/senorita/Desktop/AlphaLDM Project/figures/ldm_financial_mining_train_test_final_round100.svg",
+    "pdf": "/Users/senorita/Desktop/AlphaLDM Project/figures/ldm_financial_mining_train_test_final_round100.pdf",
+    "metadata": "/Users/senorita/Desktop/AlphaLDM Project/figures/ldm_financial_mining_train_test_final_round100.json"
+  }
+}

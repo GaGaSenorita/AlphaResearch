@@ -1,0 +1,107 @@
+{
+  "snapshot_round": 100,
+  "seed": 456,
+  "factor_count": 342,
+  "train_milestones": [
+    {
+      "round": 0,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 10,
+      "factor_round": 7,
+      "name": "VOL_WEIGHTED_LOW_REVERSAL",
+      "rank_ic": 0.047908750058613996
+    },
+    {
+      "round": 20,
+      "factor_round": 12,
+      "name": "INTRADAY_RANGE_REVERSAL_VOLUME",
+      "rank_ic": 0.052797859732256876
+    },
+    {
+      "round": 30,
+      "factor_round": 23,
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "rank_ic": 0.05338641022185003
+    },
+    {
+      "round": 40,
+      "factor_round": 23,
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "rank_ic": 0.05338641022185003
+    },
+    {
+      "round": 50,
+      "factor_round": 23,
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "rank_ic": 0.05338641022185003
+    },
+    {
+      "round": 60,
+      "factor_round": 23,
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "rank_ic": 0.05338641022185003
+    },
+    {
+      "round": 70,
+      "factor_round": 23,
+      "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+      "rank_ic": 0.05338641022185003
+    },
+    {
+      "round": 80,
+      "factor_round": 78,
+      "name": "HIGH_LOW_RANGE_AMPLIFIED_REVERSAL",
+      "rank_ic": 0.058111158297685664
+    },
+    {
+      "round": 90,
+      "factor_round": 90,
+      "name": "VOL_RANGE_CORR_PANIC_REVERSAL",
+      "rank_ic": 0.058651366820780766
+    },
+    {
+      "round": 100,
+      "factor_round": 90,
+      "name": "VOL_RANGE_CORR_PANIC_REVERSAL",
+      "rank_ic": 0.058651366820780766
+    }
+  ],
+  "measured_top5_test_checkpoints": [
+    {
+      "round": 20,
+      "rank_ic": 0.03831263947494063
+    },
+    {
+      "round": 38,
+      "rank_ic": 0.038366343757972446
+    },
+    {
+      "round": 50,
+      "rank_ic": 0.038366343757972446
+    },
+    {
+      "round": 75,
+      "rank_ic": 0.038366343757972446
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.03361301079814106
+    }
+  ],
+  "single_factor_points_displayed": false,
+  "staged_single_factor_test_results": [],
+  "illustrative_projection": null,
+  "threshold": 0.035,
+  "test_usage": "retrospective audit only; not used for search or selection",
+  "data_dir": "/mnt/data1/fin-autoresearch/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+  "outputs": {
+    "png": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed456_round100.png",
+    "svg": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed456_round100.svg",
+    "pdf": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed456_round100.pdf",
+    "metadata": "/mnt/data1/fin-autoresearch/AlphaResearch/figures/ldm_financial_mining_seed456_round100.json"
+  }
+}
