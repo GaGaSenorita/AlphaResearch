@@ -125,4 +125,3 @@ the same canonical run names as the original GPU experiments. Each run directory
 contains its ordered factor sequence, resume state, checkpoint Top-5
 Validation/Test reports, and PNG/SVG/PDF figure. See the run directory's README
 and `results_summary.json` for a compact index.
-
