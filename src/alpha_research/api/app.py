@@ -143,6 +143,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def pause(job_id: str, request: Request):
         return request.app.state.manager.pause(job_id)
 
+    @app.post("/api/runs/{job_id}/stop")
+    def stop(job_id: str, request: Request):
+        """Immediately cancel this worker; keep its last durable checkpoint."""
+        return request.app.state.manager.stop(job_id)
+
     @app.post("/api/runs/{job_id}/resume", status_code=202)
     def resume(job_id: str, body: ResumeRequest, request: Request):
         return request.app.state.manager.resume(job_id, **body.model_dump())

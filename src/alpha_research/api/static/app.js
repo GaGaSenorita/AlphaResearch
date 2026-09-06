@@ -4,8 +4,10 @@ const fmt = value => Number.isFinite(value) ? value.toFixed(4) : '—';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const phaseNames = {queued:'正在准备',initializing:'初始化研究环境',proposal:'提出新的因子',representation:'刻画因子行为',surrogate:'学习已验证的结果',acquisition:'分配评估预算',train:'验证 Train 表现',validation:'筛选 Validation Top-5',test:'评估 Test 泛化表现',commit:'保存已完成的轮次',checkpoint:'新的阶段结果已就绪',replay:'展开历史发现',resuming:'恢复已保存的搜索',paused:'已安全暂停',completed:'本次运行完成',failed:'运行需要处理',interrupted:'等待恢复'};
 const statusNames = {queued:'准备中',running:'运行中',paused:'已暂停',completed:'已完成',failed:'运行失败',interrupted:'已中断'};
-let mode='mock', current=null, data=null, archives=[], busy=false, jobs=[], pollBusy=false, sessionBusy=false, pollErrors=0;
+statusNames.stopped='已停止';phaseNames.stopped='已立即停止';
+let mode='mock', current=null, data=null, archives=[], busy=false, stopping=false, jobs=[], pollBusy=false, sessionBusy=false, pollErrors=0;
 let renderKey='';
+let stopError='';
 
 async function api(path, options={}) {
   const response = await fetch(path, {headers:{'Content-Type':'application/json'}, ...options});
@@ -111,13 +113,18 @@ function render(value) {
   $('top5').innerHTML=(value.top5||[]).map((f,i)=>`<tr><td>${i+1}</td><td title="${esc(f.expression)}">${esc(f.name)}</td><td>R${f.round}</td><td>${fmt(f.validation_rank_ic)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">阶段评估完成后，在这里查看入选因子</td></tr>';
   $('train-checkpoint').textContent=value.train?.length?`R${value.train.at(-1).round} · 每 5 轮记录`:'等待初始因子库';
   $('pause').disabled=!current||!active||Boolean(value.pause_requested);
+  $('pause').textContent=value.mode==='online'?'安全暂停':'暂停回放';
+  $('stop').disabled=!current||stopping||(!active&&!value.alive);
+  $('stop').textContent=stopping?'正在终止…':'■ 立即停止';
+  $('stop-note').textContent=value.status==='stopped'?'已停止。继续时从最近的完整提交点恢复。':value.pause_requested&&active?'安全暂停仍在等待；立即停止可现在终止。':'立即停止不等待本轮完成；已提交结果保留。';
   $('speed').disabled=Boolean(current)&&active&&value.mode==='mock';
-  $('resume').disabled=!current||!['paused','failed','interrupted','completed'].includes(value.status)||(value.status==='completed'&&value.mode==='mock')||value.alive===true;
+  $('resume').disabled=!current||!['paused','stopped','failed','interrupted','completed'].includes(value.status)||(value.status==='completed'&&value.mode==='mock')||value.alive===true||stopping;
   $('resume').textContent=value.status==='completed'?'续跑':'继续';$('export').disabled=!current;
   $('footer-state').textContent=current?`SESSION ${current.slice(0,8)} · ${value.mode==='mock'?'HISTORICAL REPLAY':'LIVE RESEARCH'}`:'Measured research. Visible progress.';
   const key=JSON.stringify([value.train,value.test,value.test_best_so_far,total,$('envelope').checked]);
   if(key!==renderKey){renderKey=key;drawChart('train',value.train||[],[],total);drawChart('test',value.test||[],value.test_best_so_far||[],total);}
-  if(value.error)alertMessage(`${readableError(value.error)}。已提交进度保留，详细错误可导出查看。`);else if(value.last_provider_error)alertMessage(`${readableError(value.last_provider_error)}。任务仍在运行，已提交进度保留。`);else if(value.reporting_warning)alertMessage(`搜索进度已保存，阶段报告待补齐：${readableError(value.reporting_warning)}`);else if(pollErrors===0)alertMessage('');
+  if(value.status==='stopped')stopError='';
+  if(stopError)alertMessage(stopError);else if(value.error)alertMessage(`${readableError(value.error)}。已提交进度保留，详细错误可导出查看。`);else if(active&&value.last_provider_error)alertMessage(`${readableError(value.last_provider_error)}。任务仍在运行，已提交进度保留。`);else if(value.reporting_warning)alertMessage(`搜索进度已保存，阶段报告待补齐：${readableError(value.reporting_warning)}`);else if(pollErrors===0)alertMessage('');
   const item=jobs.find(j=>j.id===current);
   if(item&&(item.status!==value.status||item.committed_round!==round)){Object.assign(item,{status:value.status,committed_round:round});renderSessions();}
 }
@@ -137,6 +144,7 @@ async function poll(){if(!current||pollBusy)return;pollBusy=true;const id=curren
 async function start(){if(busy)return;busy=true;$('start').disabled=true;alertMessage('');try{
   const target=mode==='mock'?100:Number($('target').value);
   if(!Number.isInteger(target)||target<5||target>10000||target%5)throw new Error('目标轮数请输入 5 的倍数，范围 5–10000。');
+  if(mode==='online'&&!window.confirm(`启动真实 Online 搜索至 ${target} 轮？\n这会调用 DeepSeek Flash 并消耗 API 额度。可随时点击「立即停止」。`))return;
   const job=await api('/api/runs',{method:'POST',body:JSON.stringify({mode,seed:Number($('seed').value),target_rounds:target,interval_seconds:Number($('speed').value)})});
   await selectJob(job.id);await sessions();
 }catch(error){alertMessage(error.message);}finally{busy=false;$('start').disabled=false;}}
@@ -144,7 +152,8 @@ async function readiness(){try{const r=await api('/api/readiness');$('ready-dot'
 $('mock-mode').onclick=()=>setMode('mock');$('online-mode').onclick=()=>setMode('online');$('seed').onchange=()=>{if(!current)preview();};
 $('speed').oninput=()=>$('speed-value').textContent=$('speed').value+' s';$('target').onchange=()=>{if(!current)preview();};$('start').onclick=start;
 $('pause').onclick=async()=>{if(!current)return;try{await api(`/api/runs/${current}/pause`,{method:'POST',body:'{}'});toast(mode==='mock'?'正在暂停回放':'将在本轮安全保存后暂停');await poll();}catch(error){alertMessage(error.message);}};
-$('resume').onclick=async()=>{if(!current)return;try{const body={interval_seconds:Number($('speed').value)};if(mode==='online')body.target_rounds=Number($('target').value);await api(`/api/runs/${current}/resume`,{method:'POST',body:JSON.stringify(body)});await poll();await sessions();}catch(error){alertMessage(error.message);}};
+$('stop').onclick=async()=>{if(!current||stopping)return;const id=current;stopping=true;stopError='';if(data)render(data);try{const stopped=await api(`/api/runs/${id}/stop`,{method:'POST',body:'{}'});if(current===id)render({...data,...stopped});toast('已立即停止，已提交结果保留');await poll();await sessions();}catch(error){stopError=`停止未确认：${readableError(error.message)}。请重试。`;}finally{stopping=false;if(data)render(data);}};
+$('resume').onclick=async()=>{if(!current)return;if(mode==='online'&&!window.confirm('继续真实 Online 搜索？\n将从已提交进度恢复，并继续消耗 API 额度。'))return;try{const body={interval_seconds:Number($('speed').value)};if(mode==='online')body.target_rounds=Number($('target').value);await api(`/api/runs/${current}/resume`,{method:'POST',body:JSON.stringify(body)});await poll();await sessions();}catch(error){alertMessage(error.message);}};
 $('envelope').onchange=()=>{if(data)render(data);};$('copy-formula').onclick=async()=>{try{await navigator.clipboard.writeText(data.best_factor.expression);toast('公式已复制');}catch{toast('请直接选择公式并复制');}};
 $('export').onclick=()=>{if(current)window.location.href=`/api/runs/${current}/export`;};
 async function init(){try{archives=(await api('/api/archives')).archives;await sessions();const saved=new URLSearchParams(location.search).get('run')||localStorage.getItem('alphaldm-current');if(saved&&jobs.some(j=>j.id===saved))await selectJob(saved);else preview();}catch(error){alertMessage(error.message);preview();}readiness();setInterval(poll,1000);setInterval(sessions,4000);setInterval(readiness,30000);}

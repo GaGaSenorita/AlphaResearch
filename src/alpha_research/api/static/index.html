@@ -29,7 +29,9 @@
     <p class="field-note">每 5 轮评估 · 支持继续运行</p>
   </div>
   <button id="start" class="primary"><span class="play-icon">▶</span> 开始回放</button>
-  <div class="secondary-actions"><button id="pause" disabled>暂停</button><button id="resume" disabled>继续</button></div>
+  <button id="stop" class="danger-action" disabled title="立即终止当前任务，不等待本轮完成；保留已提交结果">■ 立即停止</button>
+  <p id="stop-note" class="control-note">立即停止不等待本轮完成；已提交结果保留。</p>
+  <div class="secondary-actions"><button id="pause" disabled title="等待当前轮及阶段报告完成后暂停">安全暂停</button><button id="resume" disabled>继续</button></div>
   <div class="session-list-wrap"><div class="section-label">RECENT SESSIONS</div><div id="sessions" class="sessions"><p class="muted">还没有运行记录</p></div></div>
   <div class="sidebar-bottom"><span class="status-dot" id="ready-dot"></span><span id="ready-text">检查运行环境…</span><a href="/docs" target="_blank" rel="noreferrer">API ↗</a></div>
 </aside>

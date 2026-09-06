@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -13,11 +14,11 @@ from pathlib import Path
 
 import psutil
 
-from alpha_research.api.records import read_json, factor_view
+from alpha_research.api.records import read_json, factor_view, snapshot as build_snapshot
 from alpha_research.api.settings import Settings
 from alpha_research.io import write_json
 
-TERMINAL = {"completed", "paused", "failed", "interrupted"}
+TERMINAL = {"completed", "paused", "stopped", "failed", "interrupted"}
 JOB_ID = re.compile(r"^[a-f0-9]{16}$")
 
 
@@ -30,6 +31,45 @@ def worker_alive(job_dir: Path) -> bool:
                 str(job_dir) in process.cmdline() and process.status() != psutil.STATUS_ZOMBIE)
     except (KeyError, psutil.Error):
         return False
+
+
+def terminate_worker(job_dir: Path) -> None:
+    """Stop only this verified, isolated worker and its existing descendants."""
+    if not worker_alive(job_dir):
+        return
+    identity = read_json(job_dir / "process.json")
+    try:
+        process = psutil.Process(identity["pid"])
+        if abs(process.create_time() - identity["created"]) >= .1 or os.getpgid(process.pid) != process.pid:
+            raise ValueError("Worker identity or process group changed; refusing to signal another process")
+        children = process.children(recursive=True)
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except PermissionError:
+            # macOS may reject a group signal if its leader just exited after
+            # reading the pause flag. Fall back to creation-time-checked PIDs.
+            for child in [process, *children]:
+                try:
+                    child.terminate()
+                except psutil.NoSuchProcess:
+                    pass
+    except (ProcessLookupError, psutil.NoSuchProcess):
+        return
+    # Most jobs exit immediately. A bounded escalation also handles blocked I/O.
+    _, alive = psutil.wait_procs([process, *children], timeout=1.5)
+    for child in alive:
+        try:
+            child.kill()  # psutil checks creation time, protecting against PID reuse.
+        except psutil.NoSuchProcess:
+            pass
+    _, alive = psutil.wait_procs(alive, timeout=1)
+    def still_running(child):
+        try:
+            return child.is_running() and child.status() != psutil.STATUS_ZOMBIE
+        except psutil.NoSuchProcess:
+            return False
+    if worker_alive(job_dir) or any(still_running(p) for p in alive):
+        raise ValueError("Worker has not stopped; retry Stop and inspect the process status")
 
 
 def credential_available() -> bool:
@@ -129,6 +169,33 @@ class JobManager:
             # The worker owns state.json. Pause never races its atomic writer.
             return {**state, "pause_requested": True}
 
+    def stop(self, job_id: str) -> dict:
+        with self.lock:
+            path = self.directory(job_id)
+            current = self.get(job_id)
+            if not current["alive"] and current["status"] in {"completed", "stopped"}:
+                return current
+            write_json(path / "control.json", {"pause": True, "stop": True})
+            terminate_worker(path)
+            # The worker can no longer race these writes. Re-read the durable
+            # commit head in case it committed just before receiving SIGTERM.
+            state = read_json(path / "state.json", {})
+            if current["mode"] == "online":
+                for run_dir in (path / "run").glob("*"):
+                    sequence = read_json(run_dir / "factor_sequence.json")
+                    resume = read_json(run_dir / "resume_state.json")
+                    if sequence is not None and resume is not None:
+                        committed = min(int(sequence.get("completed_round") or 0), int(resume.get("round_id") or 0))
+                        payload = build_snapshot(sequence, read_json(run_dir / "top5_combinations.json", {}),
+                                                 committed_round=committed, target=current["target_rounds"])
+                        write_json(path / "snapshot.json", payload)
+                        state["committed_round"] = committed
+            state.update(status="stopped", stage="stopped", error=None,
+                         message="Stopped immediately; committed progress is preserved",
+                         stop_reason="user_immediate_stop", stopped_at=time.time(), updated_at=time.time())
+            write_json(path / "state.json", state)
+            return self.get(job_id)
+
     def resume(self, job_id: str, *, target_rounds: int | None = None, interval_seconds: float | None = None) -> dict:
         with self.lock:
             path = self.directory(job_id)
@@ -147,7 +214,7 @@ class JobManager:
             spec["target_rounds"] = new_target
             if interval_seconds is not None:
                 spec["interval_seconds"] = interval_seconds
-            write_json(path / "control.json", {"pause": False})
+            write_json(path / "control.json", {"pause": False, "stop": False})
             write_json(path / "state.json", {**read_json(path / "state.json", {}),
                        "status": "queued", "stage": "resuming", "error": None, "message": "Resuming saved run"})
             self._launch(path, spec)

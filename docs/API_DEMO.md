@@ -88,9 +88,16 @@ The pulse panel identifies proposal, profiling, GP/UCB, Train, Validation,
 Test, and checkpoint stages. The duration is computational time, not the
 artificial replay interval.
 
-**暂停** requests a safe pause after the current complete round and its scheduled
-report. It can take time while an evaluation or LLM request finishes. **继续**
-restores the same run. After completion, increase the target and click **续跑**
+**立即停止** terminates the selected worker immediately, including blocked LLM
+requests, without waiting for the round to finish. It preserves committed results;
+unfinished work may need repeating after resume. It does not kill the shared FFO
+service or another run. Requests already accepted by a provider may still be
+charged; stopping cannot reverse these charges.
+
+**安全暂停** waits for the current complete round and its scheduled report before
+exiting. Use **立即停止** if the priority is to stop new spending promptly. **继续**
+restores the same run. Online start/resume asks for confirmation in the dashboard
+because it uses real API credit. After completion, increase the target and click **续跑**
 to extend it, e.g. R100 → R200. Only one online worker runs at a time to avoid
 CPU contention and duplicate paid jobs; mock playback can run alongside it.
 
@@ -112,6 +119,7 @@ curl http://127.0.0.1:8765/api/runs/RUN_ID
 curl http://127.0.0.1:8765/api/runs/RUN_ID/factors
 curl http://127.0.0.1:8765/api/runs/RUN_ID/export
 curl -X POST http://127.0.0.1:8765/api/runs/RUN_ID/pause
+curl -X POST http://127.0.0.1:8765/api/runs/RUN_ID/stop
 curl -X POST http://127.0.0.1:8765/api/runs/RUN_ID/resume \
   -H 'Content-Type: application/json' -d '{"target_rounds":200}'
 ```
@@ -177,7 +185,8 @@ pytest tests/test_api.py tests/test_ldm_continuous_discovery.py tests/test_ldm_f
 ```
 
 Tests cover measured five-round replay provenance/visibility, negative and
-missing Test values, job pause/resume across service lifetimes, request bounds,
+missing Test values, job pause/resume across service lifetimes, immediate
+stop/resume, process isolation and PID-reuse safeguards, request bounds,
 cross-origin controls, credential exclusion, and exact round continuation.
 The adapter test uses explicitly synthetic dependencies and is not scientific
 evidence. Actual online smoke results live in their own API job directory.

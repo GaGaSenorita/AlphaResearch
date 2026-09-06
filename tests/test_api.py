@@ -120,6 +120,72 @@ def test_online_capacity_and_backwards_target(settings, monkeypatch):
         manager._check_capacity("online")
 
 
+def test_immediate_stop_is_fast_isolated_and_resumable(settings):
+    """Only local replay processes: no LLM/evaluator requests are made."""
+    with TestClient(create_app(settings)) as client:
+        ids = [client.post('/api/runs', json={"mode":"mock", "target_rounds":100,
+                "interval_seconds":60}).json()['id'] for _ in range(2)]
+        try:
+            for job_id in ids:
+                wait_for(client, job_id, lambda r: r['alive'] and bool(r.get('train')))
+            before = client.get(f'/api/runs/{ids[0]}').json()
+            started = time.monotonic()
+            response = client.post(f'/api/runs/{ids[0]}/stop')
+            assert response.status_code == 200
+            assert time.monotonic() - started < 5
+            result = response.json()
+            assert result['status'] == 'stopped' and not result['alive']
+            assert client.get(f'/api/runs/{ids[1]}').json()['alive'] is True
+            assert client.post(f'/api/runs/{ids[0]}/stop').json()['status'] == 'stopped'
+            saved = client.get(f'/api/runs/{ids[0]}').json()
+            assert saved['train'] == before['train'] and saved['test'] == before['test']
+            assert client.post(f'/api/runs/{ids[0]}/resume', json={'interval_seconds':.2}).status_code == 202
+            done = wait_for(client, ids[0], lambda r: r['status']=='completed')
+            assert done['committed_round'] == 100 and done['factor_count'] == 342
+        finally:
+            for job_id in ids:
+                client.post(f'/api/runs/{job_id}/stop')
+
+
+def test_stop_does_not_signal_a_nonisolated_process(tmp_path, monkeypatch):
+    import os
+    import psutil
+    import alpha_research.api.jobs as jobs
+    process = psutil.Process(os.getpid())
+    write_json(tmp_path/'process.json', {'pid':process.pid, 'created':process.create_time()})
+    monkeypatch.setattr(jobs, 'worker_alive', lambda path: True)
+    monkeypatch.setattr(jobs.os, 'getpgid', lambda pid: 0)
+    def forbidden(*args):
+        raise AssertionError('Must not signal a nonisolated process')
+    monkeypatch.setattr(jobs.os, 'killpg', forbidden)
+    with pytest.raises(ValueError, match='refusing to signal'):
+        jobs.terminate_worker(tmp_path)
+
+
+def test_immediate_stop_escalates_when_worker_ignores_term(tmp_path):
+    """A local sleeping stand-in, not an online search or a provider call."""
+    import subprocess
+    import sys
+    import psutil
+    from alpha_research.api.jobs import terminate_worker, worker_alive
+    script = "import signal,time; signal.signal(signal.SIGTERM,signal.SIG_IGN); print('ready',flush=True); time.sleep(60)"
+    process = subprocess.Popen([sys.executable, '-c', script, 'alpha_research.api.worker', '--job-dir', str(tmp_path)],
+                               stdout=subprocess.PIPE, text=True, start_new_session=True)
+    try:
+        assert process.stdout.readline().strip() == 'ready'
+        write_json(tmp_path/'process.json', {'pid':process.pid, 'created':psutil.Process(process.pid).create_time()})
+        assert worker_alive(tmp_path)
+        started = time.monotonic()
+        terminate_worker(tmp_path)
+        assert time.monotonic() - started < 4
+        assert not worker_alive(tmp_path)
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=3)
+        process.stdout.close()
+
+
 def test_live_adapter_exact_round_resume_with_test_components(tmp_path, monkeypatch):
     """Test the real adapter/commit path with deterministic, clearly synthetic dependencies."""
     import alpha_research.runner as runner
