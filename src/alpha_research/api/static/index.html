@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101719">
+  <title>AlphaLDM · Discovery Console</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2310191b'/%3E%3Ctext x='15' y='46' font-size='45' fill='%238de1bd'%3Eα%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand" href="/"><span class="brand-mark">α</span><span>AlphaLDM<small>DISCOVERY CONSOLE</small></span></a>
+  <div class="section-label">RESEARCH SESSION</div>
+  <div class="mode-switch" role="group" aria-label="运行模式">
+    <button id="mock-mode" class="selected" aria-pressed="true">Mock <span>历史回放</span></button>
+    <button id="online-mode" aria-pressed="false">Online <span>实时搜索</span></button>
+  </div>
+  <p id="mode-description" class="muted mode-description">回放真实的历史实验，每 5 轮展开一段新的发现。</p>
+  <label class="field-label" for="seed">Random seed</label>
+  <select id="seed" aria-label="Random seed"><option>42</option><option>123</option><option>456</option></select>
+  <div id="speed-field">
+    <label class="field-label" for="speed">回放间隔 <output id="speed-value">2.5 s</output></label>
+    <input id="speed" type="range" min="0.5" max="6" step="0.5" value="2.5">
+  </div>
+  <div id="target-field" hidden>
+    <label class="field-label" for="target">目标轮数</label>
+    <input id="target" type="number" min="5" max="10000" step="5" value="100">
+    <p class="field-note">每 5 轮评估 · 支持继续运行</p>
+  </div>
+  <button id="start" class="primary"><span class="play-icon">▶</span> 开始回放</button>
+  <div class="secondary-actions"><button id="pause" disabled>暂停</button><button id="resume" disabled>继续</button></div>
+  <div class="session-list-wrap"><div class="section-label">RECENT SESSIONS</div><div id="sessions" class="sessions"><p class="muted">还没有运行记录</p></div></div>
+  <div class="sidebar-bottom"><span class="status-dot" id="ready-dot"></span><span id="ready-text">检查运行环境…</span><a href="/docs" target="_blank" rel="noreferrer">API ↗</a></div>
+</aside>
+<main>
+  <header><div><div class="eyebrow">LARGE DISCOVERY MODELS / ALPHA MINING</div><h1>Financial factor discovery<span class="title-dot">.</span></h1></div><div class="header-actions"><span id="mode-badge" class="badge">HISTORICAL REPLAY</span><button id="export" class="icon-button" disabled title="下载当前可见的运行结果">导出 ↗</button></div></header>
+  <div id="alert" class="alert" role="alert" hidden></div>
+  <section class="run-strip" aria-live="polite"><div class="run-state"><span class="status-dot" id="run-dot"></span><strong id="run-status">准备就绪</strong><span id="run-message">选择一个 seed，开始观看发现过程</span></div><div class="run-meta"><span id="run-seed">SEED 42</span><span id="run-time">每 5 轮更新</span></div></section>
+  <section class="metrics">
+    <article><div class="metric-label">SEARCH PROGRESS <span id="percent">0%</span></div><div class="metric-value"><span id="round">0</span><span class="metric-denom"> / <span id="total">100</span> rounds</span></div><div class="progress-track"><div id="progress"></div></div></article>
+    <article><div class="metric-label"><i class="legend-dot amber"></i> BEST TRAIN RANKIC</div><div class="metric-value amber-text" id="train-value">—</div><div class="metric-foot" id="train-delta">已提交因子中的最佳表现</div></article>
+    <article><div class="metric-label"><i class="legend-dot mint"></i> LATEST TOP-5 TEST RANKIC</div><div class="metric-value mint-text" id="test-value">—</div><div class="metric-foot" id="test-round">Validation 筛选后的真实评估</div></article>
+    <article><div class="metric-label">SAVED FACTORS</div><div class="metric-value" id="factor-count">—</div><div class="metric-foot" id="observation-count">按真实评估顺序保存</div></article>
+  </section>
+  <div class="workspace">
+    <section class="chart-stack">
+      <article class="panel chart-panel"><div class="panel-heading"><div><span class="panel-index">01</span><h2>Training</h2><span class="panel-subtitle">Best factor so far</span></div><span class="plot-unit">RankIC</span></div><div class="chart" id="train-chart" aria-label="Train 最佳因子 RankIC 曲线"></div><div class="chart-caption"><span><i class="legend-line amber"></i> 已提交的最佳单因子</span><span id="train-checkpoint">R0 · 初始因子库</span></div></article>
+      <article class="panel chart-panel"><div class="panel-heading"><div><span class="panel-index">02</span><h2>Test</h2><span class="panel-subtitle">Validation-selected Top-5</span></div><label class="toggle"><input type="checkbox" id="envelope" checked> Best-so-far</label></div><div class="chart" id="test-chart" aria-label="Validation Top-5 组合的实测 Test RankIC 曲线"></div><div class="chart-caption"><span><i class="legend-line mint"></i> 实测 <i class="legend-line muted-line dashed"></i> 事后 best-so-far</span><span>记录阈值 0.035</span></div></article>
+      <p class="protocol-note">Train 驱动搜索 · Validation 选择 Top-5 · Test 只作评估；best-so-far 为事后展示，不参与搜索或选择。</p>
+      <article class="panel table-panel"><div class="panel-heading"><div><span class="panel-index">03</span><h2>Selected factors</h2></div><span class="panel-subtitle" id="top5-round">Validation Top-5</span></div><div class="table-scroll"><table><thead><tr><th>#</th><th>Factor</th><th>Discovered</th><th>Val RankIC</th></tr></thead><tbody id="top5"><tr><td colspan="4" class="empty">阶段评估完成后，在这里查看入选因子</td></tr></tbody></table></div></article>
+    </section>
+    <aside class="research-rail">
+      <article class="panel phase-panel"><div class="panel-heading"><h2>Research pulse</h2><span id="live-label" class="small-badge">REPLAY</span></div><div class="phase-name" id="phase-name">等待开始</div><p id="phase-detail" class="muted">历史结果将按 5 轮逐步展开。</p><div class="phase-steps" id="phase-steps"><span data-stage="proposal">Proposal</span><span data-stage="representation">12D profile</span><span data-stage="surrogate">GP / UCB</span><span data-stage="train">Train</span><span data-stage="validation">Validation</span><span data-stage="test">Test</span></div><div class="phase-footer"><span>当前阶段 / 上轮</span><strong><span id="stage-duration">—</span> / <span id="round-duration">—</span></strong></div></article>
+      <article class="panel best-panel"><div class="panel-heading"><h2>Leading alpha</h2><span class="star">✧</span></div><div class="factor-kicker" id="best-origin">TRAIN LEADER</div><h3 id="best-name">等待因子</h3><code id="best-expression">—</code><p id="best-reason" class="muted">这里会展示当前最佳因子的公式与生成想法。</p><div class="best-footer"><span id="best-round">—</span><button id="copy-formula" class="text-button" disabled>复制公式 ↗</button></div></article>
+      <article class="panel discoveries-panel"><div class="panel-heading"><h2>Recent discoveries</h2><span class="tiny-label">IN ORDER</span></div><div id="recent"><p class="muted">保留每个因子的生成顺序。</p></div></article>
+    </aside>
+  </div>
+  <footer><span>AlphaLDM <span class="footer-slash">/</span> Discovery Console</span><span id="footer-state">Measured research. Visible progress.</span></footer>
+</main>
+<div id="tooltip" class="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+</body></html>

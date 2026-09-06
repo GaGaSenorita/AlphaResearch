@@ -30,6 +30,23 @@ Validation-selected Top-5 Test audits.
 - `ldm_rankic_turnover_ehvi`
 - `ldm_continuous_discovery`
 
+## Interactive demo and FastAPI
+
+The `AlphaLDM_API` branch includes a local dashboard with measured five-round
+historical replay for seeds 42/123/456 and real, resumable online discovery.
+
+```bash
+conda activate AlphaResearch
+pip install -e '.[dev,api]'
+bash scripts/start_api.sh
+```
+
+Open **http://127.0.0.1:8765** and choose **Mock** or **Online**. The latter uses
+real DeepSeek V4 Flash requests and the local evaluator. See
+[`docs/API_DEMO.md`](docs/API_DEMO.md) for startup, APIs, report definitions,
+pause/resume, and deployment instructions. Existing experiments are preserved;
+new live jobs write to `runtime/api/jobs/`.
+
 ## Installation
 
 Python 3.10 or 3.11 is recommended on Linux.

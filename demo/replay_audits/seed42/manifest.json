@@ -1,0 +1,36 @@
+{
+  "checkpoint_rounds": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100
+  ],
+  "llm_called": false,
+  "original_runs_modified": false,
+  "replay_sha256": "a5058416ac5dcf8da2fa265568c10df444a74a081c8bfd5b9ae9dcf084b3660d",
+  "report_sha256": "08785176137ca38939270b0cded85178a3ab461d8bbebf73d4c59b419ce1d2c9",
+  "seed": 42,
+  "source_files_sha256": {
+    "checkpoint_validation_ledger.jsonl": "297166bc5a6a338b098df729058a0a48ae9662a598956cb1e3788bf349bfe2da",
+    "factor_sequence.json": "ae71bd821aa9411fd070bd211c1e89ffd2e8754fc2fa6d24f3aac50b7c1b8428",
+    "resume_state.json": "5bfacc0df64d22c5d4e7e822b4ff308763ca02864f1fe596a485cf8c2cb6c027",
+    "top5_combinations.json": "d3e2c236936394244ee42f36c8c8311562f5b5472e1e3b0bea79ee89c581162c"
+  }
+}
