@@ -13,6 +13,7 @@ from matplotlib.lines import Line2D
 from matplotlib.ticker import FormatStrFormatter
 
 from plot_ldm_financial_mining import (
+    CHECKPOINT_STEP,
     GRID,
     MUTED,
     NAVY,
@@ -20,6 +21,7 @@ from plot_ldm_financial_mining import (
     PURPLE_DARK,
     RAW_TEST,
     load_json,
+    measured_test_values,
     regular_checkpoint_rows,
     retrospective_test_best_so_far,
     train_leaders_at_rounds,
@@ -42,23 +44,20 @@ def _load_seed(seed: int, data_dir: Path) -> dict[str, Any]:
     if snapshot_round != 100:
         raise ValueError(f"seed {seed} is at R{snapshot_round}, expected R100")
 
-    milestone_rounds = list(range(0, snapshot_round + 1, 10))
+    milestone_rounds = list(range(0, snapshot_round + 1, CHECKPOINT_STEP))
     train = train_leaders_at_rounds(list(factors["factors"]), milestone_rounds)
 
     checkpoints = regular_checkpoint_rows(
         sorted(report["checkpoints"], key=lambda row: row["checkpoint_round"]),
         snapshot_round,
-        step=10,
+        require_complete=True,
     )
     test_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
     if test_rounds != milestone_rounds:
         raise ValueError(
             f"seed {seed} Test checkpoints are {test_rounds}, expected {milestone_rounds}"
         )
-    raw_test = [
-        float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
-        for row in checkpoints
-    ]
+    raw_test = measured_test_values(checkpoints)
     test_best = retrospective_test_best_so_far(test_rounds, raw_test)
     return {
         "seed": seed,
@@ -114,7 +113,7 @@ def draw_comparison(
     fig.text(
         0.085,
         0.902,
-        "Three independent seeds · 100 LDM rounds · real evaluations only",
+        "Three independent seeds · measured checkpoints every 5 rounds",
         ha="left",
         va="top",
         fontsize=10.2,
@@ -124,7 +123,7 @@ def draw_comparison(
     for ax in (train_ax, test_ax):
         ax.set_facecolor("#FCFCFD")
         ax.set_xlim(0, 107)
-        ax.set_xticks(list(range(0, 101, 10)))
+        ax.set_xticks(list(range(0, 101, CHECKPOINT_STEP)))
         ax.grid(axis="y", color="#E6E9F0", linewidth=0.8, alpha=0.9)
         ax.grid(axis="x", color="#EEF0F5", linewidth=0.65, alpha=0.85)
         ax.spines[["top", "right"]].set_visible(False)
@@ -290,7 +289,8 @@ def draw_comparison(
     metadata = {
         "title": "LDM financial factor discovery",
         "seeds": records,
-        "train_curve": "best-so-far from committed real evaluations at R0/R10/.../R100",
+        "train_curve": "best-so-far from committed real evaluations at R0/R5/.../R100",
+        "checkpoint_step": CHECKPOINT_STEP,
         "test_curve": (
             "retrospective best-so-far of real Validation-selected Top-5 Test audits; "
             "not used for search or selection"

@@ -10,7 +10,19 @@
       "rank_ic": 0.04610131960175362
     },
     {
+      "round": 5,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
       "round": 10,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 15,
       "factor_round": 0,
       "name": "LOW_REF",
       "rank_ic": 0.04610131960175362
@@ -22,13 +34,31 @@
       "rank_ic": 0.04610131960175362
     },
     {
+      "round": 25,
+      "factor_round": 21,
+      "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+      "rank_ic": 0.04810581803892827
+    },
+    {
       "round": 30,
       "factor_round": 21,
       "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
       "rank_ic": 0.04810581803892827
     },
     {
+      "round": 35,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
       "round": 40,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 45,
       "factor_round": 33,
       "name": "CLOSE_LOCATION_REVERSAL",
       "rank_ic": 0.05946269447767831
@@ -40,7 +70,19 @@
       "rank_ic": 0.05946269447767831
     },
     {
+      "round": 55,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
       "round": 60,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 65,
       "factor_round": 33,
       "name": "CLOSE_LOCATION_REVERSAL",
       "rank_ic": 0.05946269447767831
@@ -52,13 +94,31 @@
       "rank_ic": 0.05946269447767831
     },
     {
+      "round": 75,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
       "round": 80,
       "factor_round": 33,
       "name": "CLOSE_LOCATION_REVERSAL",
       "rank_ic": 0.05946269447767831
     },
     {
+      "round": 85,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
       "round": 90,
+      "factor_round": 89,
+      "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+      "rank_ic": 0.06081372710466161
+    },
+    {
+      "round": 95,
       "factor_round": 89,
       "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
       "rank_ic": 0.06081372710466161
@@ -76,7 +136,15 @@
       "rank_ic": 0.022413163052378157
     },
     {
+      "round": 5,
+      "rank_ic": 0.027160792540005224
+    },
+    {
       "round": 10,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 15,
       "rank_ic": 0.035560278355646416
     },
     {
@@ -84,11 +152,23 @@
       "rank_ic": 0.035560278355646416
     },
     {
+      "round": 25,
+      "rank_ic": 0.035560278355646416
+    },
+    {
       "round": 30,
       "rank_ic": 0.035560278355646416
     },
     {
+      "round": 35,
+      "rank_ic": 0.03808620261507442
+    },
+    {
       "round": 40,
+      "rank_ic": 0.03761906847765277
+    },
+    {
+      "round": 45,
       "rank_ic": 0.03761906847765277
     },
     {
@@ -96,7 +176,15 @@
       "rank_ic": 0.03761906847765277
     },
     {
+      "round": 55,
+      "rank_ic": 0.03761906847765277
+    },
+    {
       "round": 60,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 65,
       "rank_ic": 0.03957905577257804
     },
     {
@@ -104,12 +192,24 @@
       "rank_ic": 0.03957905577257804
     },
     {
+      "round": 75,
+      "rank_ic": 0.03957905577257804
+    },
+    {
       "round": 80,
       "rank_ic": 0.03957905577257804
     },
     {
+      "round": 85,
+      "rank_ic": 0.03863742969326889
+    },
+    {
       "round": 90,
       "rank_ic": 0.042431898520551424
+    },
+    {
+      "round": 95,
+      "rank_ic": 0.04243188883902932
     },
     {
       "round": 100,
@@ -118,20 +218,30 @@
   ],
   "available_checkpoint_rounds": [
     0,
+    5,
     10,
+    15,
     20,
+    25,
     30,
+    35,
     38,
     40,
+    45,
     50,
+    55,
     60,
+    65,
     70,
     75,
     80,
+    85,
     90,
+    95,
     100
   ],
-  "displayed_checkpoint_schedule": "R0/R10/.../R100",
+  "displayed_checkpoint_schedule": "R0/R5/.../R100",
+  "checkpoint_step": 5,
   "retrospective_test_best_so_far": [
     {
       "round": 0,
@@ -141,6 +251,13 @@
       "improved": true
     },
     {
+      "round": 5,
+      "rank_ic": 0.027160792540005224,
+      "source_round": 5,
+      "raw_rank_ic": 0.027160792540005224,
+      "improved": true
+    },
+    {
       "round": 10,
       "rank_ic": 0.035560278355646416,
       "source_round": 10,
@@ -148,7 +265,21 @@
       "improved": true
     },
     {
+      "round": 15,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
       "round": 20,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
+      "round": 25,
       "rank_ic": 0.035560278355646416,
       "source_round": 10,
       "raw_rank_ic": 0.035560278355646416,
@@ -162,16 +293,37 @@
       "improved": false
     },
     {
-      "round": 40,
-      "rank_ic": 0.03761906847765277,
-      "source_round": 40,
-      "raw_rank_ic": 0.03761906847765277,
+      "round": 35,
+      "rank_ic": 0.03808620261507442,
+      "source_round": 35,
+      "raw_rank_ic": 0.03808620261507442,
       "improved": true
     },
     {
+      "round": 40,
+      "rank_ic": 0.03808620261507442,
+      "source_round": 35,
+      "raw_rank_ic": 0.03761906847765277,
+      "improved": false
+    },
+    {
+      "round": 45,
+      "rank_ic": 0.03808620261507442,
+      "source_round": 35,
+      "raw_rank_ic": 0.03761906847765277,
+      "improved": false
+    },
+    {
       "round": 50,
-      "rank_ic": 0.03761906847765277,
-      "source_round": 40,
+      "rank_ic": 0.03808620261507442,
+      "source_round": 35,
+      "raw_rank_ic": 0.03761906847765277,
+      "improved": false
+    },
+    {
+      "round": 55,
+      "rank_ic": 0.03808620261507442,
+      "source_round": 35,
       "raw_rank_ic": 0.03761906847765277,
       "improved": false
     },
@@ -183,7 +335,21 @@
       "improved": true
     },
     {
+      "round": 65,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
       "round": 70,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
+      "round": 75,
       "rank_ic": 0.03957905577257804,
       "source_round": 60,
       "raw_rank_ic": 0.03957905577257804,
@@ -197,11 +363,25 @@
       "improved": false
     },
     {
+      "round": 85,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03863742969326889,
+      "improved": false
+    },
+    {
       "round": 90,
       "rank_ic": 0.042431898520551424,
       "source_round": 90,
       "raw_rank_ic": 0.042431898520551424,
       "improved": true
+    },
+    {
+      "round": 95,
+      "rank_ic": 0.042431898520551424,
+      "source_round": 90,
+      "raw_rank_ic": 0.04243188883902932,
+      "improved": false
     },
     {
       "round": 100,
@@ -216,11 +396,11 @@
   "illustrative_projection": null,
   "threshold": 0.035,
   "test_usage": "retrospective audit only; not used for search or selection",
-  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
   "outputs": {
-    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.png",
-    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.svg",
-    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.pdf",
-    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.json"
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed42_round100.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed42_round100.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed42_round100.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed42_round100.json"
   }
 }

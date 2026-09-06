@@ -10,7 +10,19 @@
       "rank_ic": 0.04610131960175362
     },
     {
+      "round": 5,
+      "factor_round": 5,
+      "name": "LOW_RANGE_CLOSE",
+      "rank_ic": 0.048981088771794655
+    },
+    {
       "round": 10,
+      "factor_round": 5,
+      "name": "LOW_RANGE_CLOSE",
+      "rank_ic": 0.048981088771794655
+    },
+    {
+      "round": 15,
       "factor_round": 5,
       "name": "LOW_RANGE_CLOSE",
       "rank_ic": 0.048981088771794655
@@ -22,7 +34,19 @@
       "rank_ic": 0.048981088771794655
     },
     {
+      "round": 25,
+      "factor_round": 5,
+      "name": "LOW_RANGE_CLOSE",
+      "rank_ic": 0.048981088771794655
+    },
+    {
       "round": 30,
+      "factor_round": 5,
+      "name": "LOW_RANGE_CLOSE",
+      "rank_ic": 0.048981088771794655
+    },
+    {
+      "round": 35,
       "factor_round": 5,
       "name": "LOW_RANGE_CLOSE",
       "rank_ic": 0.048981088771794655
@@ -34,13 +58,31 @@
       "rank_ic": 0.048981088771794655
     },
     {
+      "round": 45,
+      "factor_round": 45,
+      "name": "UPPER_SHADOW_LOW_TURNOVER",
+      "rank_ic": 0.05366823724903023
+    },
+    {
       "round": 50,
       "factor_round": 48,
       "name": "UPPER_SHADOW_DOLLAR_VOLUME_RATIO",
       "rank_ic": 0.05431506886089375
     },
     {
+      "round": 55,
+      "factor_round": 52,
+      "name": "UPSHADOW_CV_AMOUNT",
+      "rank_ic": 0.054639851006829825
+    },
+    {
       "round": 60,
+      "factor_round": 52,
+      "name": "UPSHADOW_CV_AMOUNT",
+      "rank_ic": 0.054639851006829825
+    },
+    {
+      "round": 65,
       "factor_round": 52,
       "name": "UPSHADOW_CV_AMOUNT",
       "rank_ic": 0.054639851006829825
@@ -52,13 +94,31 @@
       "rank_ic": 0.05579913407974614
     },
     {
+      "round": 75,
+      "factor_round": 74,
+      "name": "LOW_VOLUME_REVERSAL_UPPER_SHADOW",
+      "rank_ic": 0.058757659300808306
+    },
+    {
       "round": 80,
       "factor_round": 74,
       "name": "LOW_VOLUME_REVERSAL_UPPER_SHADOW",
       "rank_ic": 0.058757659300808306
     },
     {
+      "round": 85,
+      "factor_round": 85,
+      "name": "UPPER_LOWER_SHADOW_VOL_CV",
+      "rank_ic": 0.05995301352635466
+    },
+    {
       "round": 90,
+      "factor_round": 85,
+      "name": "UPPER_LOWER_SHADOW_VOL_CV",
+      "rank_ic": 0.05995301352635466
+    },
+    {
+      "round": 95,
       "factor_round": 85,
       "name": "UPPER_LOWER_SHADOW_VOL_CV",
       "rank_ic": 0.05995301352635466
@@ -76,7 +136,15 @@
       "rank_ic": 0.022413163052378157
     },
     {
+      "round": 5,
+      "rank_ic": 0.04863753637732572
+    },
+    {
       "round": 10,
+      "rank_ic": 0.04863753637732572
+    },
+    {
+      "round": 15,
       "rank_ic": 0.04863753637732572
     },
     {
@@ -84,7 +152,15 @@
       "rank_ic": 0.0325505403236064
     },
     {
+      "round": 25,
+      "rank_ic": 0.0325505403236064
+    },
+    {
       "round": 30,
+      "rank_ic": 0.0325505403236064
+    },
+    {
+      "round": 35,
       "rank_ic": 0.0325505403236064
     },
     {
@@ -92,7 +168,15 @@
       "rank_ic": 0.04528039862587724
     },
     {
+      "round": 45,
+      "rank_ic": 0.04323021120841784
+    },
+    {
       "round": 50,
+      "rank_ic": 0.04323021120841784
+    },
+    {
+      "round": 55,
       "rank_ic": 0.04323021120841784
     },
     {
@@ -100,15 +184,31 @@
       "rank_ic": 0.045032009714460385
     },
     {
+      "round": 65,
+      "rank_ic": 0.045032009714460385
+    },
+    {
       "round": 70,
       "rank_ic": 0.045032009714460385
+    },
+    {
+      "round": 75,
+      "rank_ic": 0.045031996129783675
     },
     {
       "round": 80,
       "rank_ic": 0.045032009714460385
     },
     {
+      "round": 85,
+      "rank_ic": 0.044955992731750306
+    },
+    {
       "round": 90,
+      "rank_ic": 0.044955992731750306
+    },
+    {
+      "round": 95,
       "rank_ic": 0.044955992731750306
     },
     {
@@ -118,20 +218,30 @@
   ],
   "available_checkpoint_rounds": [
     0,
+    5,
     10,
+    15,
     20,
+    25,
     30,
+    35,
     38,
     40,
+    45,
     50,
+    55,
     60,
+    65,
     70,
     75,
     80,
+    85,
     90,
+    95,
     100
   ],
-  "displayed_checkpoint_schedule": "R0/R10/.../R100",
+  "displayed_checkpoint_schedule": "R0/R5/.../R100",
+  "checkpoint_step": 5,
   "retrospective_test_best_so_far": [
     {
       "round": 0,
@@ -141,72 +251,142 @@
       "improved": true
     },
     {
-      "round": 10,
+      "round": 5,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
       "raw_rank_ic": 0.04863753637732572,
       "improved": true
     },
     {
+      "round": 10,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
+      "raw_rank_ic": 0.04863753637732572,
+      "improved": false
+    },
+    {
+      "round": 15,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
+      "raw_rank_ic": 0.04863753637732572,
+      "improved": false
+    },
+    {
       "round": 20,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
+      "raw_rank_ic": 0.0325505403236064,
+      "improved": false
+    },
+    {
+      "round": 25,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
       "raw_rank_ic": 0.0325505403236064,
       "improved": false
     },
     {
       "round": 30,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
+      "raw_rank_ic": 0.0325505403236064,
+      "improved": false
+    },
+    {
+      "round": 35,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
       "raw_rank_ic": 0.0325505403236064,
       "improved": false
     },
     {
       "round": 40,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
       "raw_rank_ic": 0.04528039862587724,
+      "improved": false
+    },
+    {
+      "round": 45,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
+      "raw_rank_ic": 0.04323021120841784,
       "improved": false
     },
     {
       "round": 50,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
+      "raw_rank_ic": 0.04323021120841784,
+      "improved": false
+    },
+    {
+      "round": 55,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
       "raw_rank_ic": 0.04323021120841784,
       "improved": false
     },
     {
       "round": 60,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
+      "raw_rank_ic": 0.045032009714460385,
+      "improved": false
+    },
+    {
+      "round": 65,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
       "raw_rank_ic": 0.045032009714460385,
       "improved": false
     },
     {
       "round": 70,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
       "raw_rank_ic": 0.045032009714460385,
+      "improved": false
+    },
+    {
+      "round": 75,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
+      "raw_rank_ic": 0.045031996129783675,
       "improved": false
     },
     {
       "round": 80,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
       "raw_rank_ic": 0.045032009714460385,
+      "improved": false
+    },
+    {
+      "round": 85,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
+      "raw_rank_ic": 0.044955992731750306,
       "improved": false
     },
     {
       "round": 90,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
+      "raw_rank_ic": 0.044955992731750306,
+      "improved": false
+    },
+    {
+      "round": 95,
+      "rank_ic": 0.04863753637732572,
+      "source_round": 5,
       "raw_rank_ic": 0.044955992731750306,
       "improved": false
     },
     {
       "round": 100,
       "rank_ic": 0.04863753637732572,
-      "source_round": 10,
+      "source_round": 5,
       "raw_rank_ic": 0.044955992731750306,
       "improved": false
     }
@@ -216,11 +396,11 @@
   "illustrative_projection": null,
   "threshold": 0.035,
   "test_usage": "retrospective audit only; not used for search or selection",
-  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
   "outputs": {
-    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.png",
-    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.svg",
-    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.pdf",
-    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.json"
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/figure.json"
   }
 }

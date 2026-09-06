@@ -1,0 +1,75 @@
+{
+  "schema_version": "alphaldm.checkpoint-report-import.v1",
+  "seed": 42,
+  "source_branch": "AlphaLDM_API",
+  "source_commit": "aa010c45b35f42de11c9f7e032c4ac6809000fca",
+  "source_report": "demo/replay_audits/seed42/top5_combinations.json.gz",
+  "source_files_sha256": {
+    "checkpoint_validation_ledger.jsonl": "297166bc5a6a338b098df729058a0a48ae9662a598956cb1e3788bf349bfe2da",
+    "factor_sequence.json": "ae71bd821aa9411fd070bd211c1e89ffd2e8754fc2fa6d24f3aac50b7c1b8428",
+    "resume_state.json": "5bfacc0df64d22c5d4e7e822b4ff308763ca02864f1fe596a485cf8c2cb6c027",
+    "top5_combinations.json": "d3e2c236936394244ee42f36c8c8311562f5b5472e1e3b0bea79ee89c581162c"
+  },
+  "imported_files_sha256": {
+    "top5_combinations.json": "08785176137ca38939270b0cded85178a3ab461d8bbebf73d4c59b419ce1d2c9",
+    "checkpoint_validation_ledger.jsonl": "598761bbe8d117717b7ae762cb1c42d8999b05d677b06197e5be9b8eac281d34"
+  },
+  "original_checkpoint_sha256": {
+    "0": "b73feb08cd2140005adb96c16f4243b4924f5593e8a8afabba54cbfa153a45c3",
+    "10": "722558b3ec3a0879f25c22aced9b8a4641e6340e12c9b439ccd96e7afa44969e",
+    "20": "5ebe352bd6658bc42b191ab749e2153fd7012615b867f95493eb731120bb840a",
+    "30": "8b229e353c2060943ce0bae5ca19efad53138bdb4e50b3db2c600eb3307de266",
+    "38": "9ce0745a215c981352c69c5efd0538178396e7e1672191df0c2922111c162b30",
+    "40": "3b3ea373438b8533cef8b4d12395c02e36717631cfbd02d9af991552f2ded5f6",
+    "50": "e550911b6642b584f45327baa07f8ca5ba2ceeaa38d12c037e707ddec9551bab",
+    "60": "897eb2b6d57634413e4e7912b01b2c506361c19da92b0e66942c09264ef555e4",
+    "70": "aae0f412e218d081d10ce317aabae68021ed124270c2603967f5848e7a60e9ed",
+    "75": "7303b5c38dd7501543008bcf45bb59bdd018fa2b761b6d742dbbc5309f3b3f43",
+    "80": "07d11ad10ca0a15eaff0c135e77003a8246cb9f425f73090e9958033e4459c49",
+    "90": "ab2ad3a5ef945bc12110640e3e13741c960b768fc9370a40db8b64d1b83a4b59",
+    "100": "0409ef328b6159bb7e7395cf64474331098321091ec6afa78026c1f546e019b8"
+  },
+  "displayed_checkpoint_rounds": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100
+  ],
+  "added_checkpoint_rounds": [
+    5,
+    15,
+    25,
+    35,
+    45,
+    55,
+    65,
+    85,
+    95
+  ],
+  "retained_legacy_off_grid_rounds": [
+    38
+  ],
+  "llm_called_during_import": false,
+  "evaluations_run_during_import": false,
+  "factor_sequence_and_resume_state_modified": false,
+  "original_checkpoint_records_modified": false,
+  "test_usage": "Retrospective audit only; never used for search or Validation selection",
+  "provenance_file": "checkpoint_measurement_provenance.jsonl.gz"
+}

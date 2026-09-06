@@ -24,6 +24,7 @@ MUTED = "#72768A"
 RAW_TEST = "#9A96A6"
 GRID = "#DDD9E7"
 PAPER = "#FBFAF7"
+CHECKPOINT_STEP = 5
 
 
 def load_json(path: Path) -> Any:
@@ -211,17 +212,37 @@ def retrospective_test_best_so_far(
 def regular_checkpoint_rows(
     checkpoints: list[dict[str, Any]],
     snapshot_round: int,
-    step: int = 10,
+    step: int = CHECKPOINT_STEP,
+    *,
+    require_complete: bool = False,
 ) -> list[dict[str, Any]]:
     """Select the regular reporting grid while retaining legacy audits on disk."""
     if step <= 0:
         raise ValueError("checkpoint step must be positive")
     requested = set(range(0, snapshot_round + 1, step))
     requested.add(snapshot_round)
-    return [
+    selected = [
         row for row in sorted(checkpoints, key=lambda item: item["checkpoint_round"])
         if int(row["checkpoint_round"]) in requested
     ]
+    rounds = [int(row["checkpoint_round"]) for row in selected]
+    if len(set(rounds)) != len(rounds):
+        raise ValueError("duplicate checkpoint rounds in reporting grid")
+    if require_complete and set(rounds) != requested:
+        raise ValueError(f"missing measured checkpoints: {sorted(requested - set(rounds))}")
+    return selected
+
+
+def measured_test_values(checkpoints: list[dict[str, Any]]) -> list[float]:
+    """Reject failed or non-finite audits rather than silently plotting a placeholder."""
+    values = []
+    for row in checkpoints:
+        result = row["test_equal_weight_rank_pool"]
+        value = result.get("metrics", {}).get("rank_ic")
+        if not result.get("success") or value is None or not math.isfinite(float(value)):
+            raise ValueError(f"invalid measured Test audit at R{row['checkpoint_round']}")
+        values.append(float(value))
+    return values
 
 
 def staged_single_test_results(checkpoints: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -312,12 +333,9 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     all_checkpoints = sorted(
         report["checkpoints"], key=lambda row: row["checkpoint_round"]
     )
-    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, require_complete=True)
     checkpoint_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
-    checkpoint_values = [
-        float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
-        for row in checkpoints
-    ]
+    checkpoint_values = measured_test_values(checkpoints)
     test_best_records = retrospective_test_best_so_far(
         checkpoint_rounds, checkpoint_values
     )
@@ -401,7 +419,7 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     ax.tick_params(colors=MUTED, labelsize=9)
     ax.set_xlabel("LDM round / cumulative real-evaluation budget", fontsize=10.5, color=NAVY)
     ax.set_ylabel("Top-5 Test RankIC", fontsize=10.5, color=NAVY)
-    ax.set_xticks(list(range(0, 101, 10)))
+    ax.set_xticks(list(range(0, 101, CHECKPOINT_STEP)))
 
     threshold = float(report["qualification"]["threshold"])
     ax.axhline(threshold, color="#AFA9B9", linewidth=1.25, linestyle=(0, (4, 3)))
@@ -575,16 +593,13 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     all_checkpoints = sorted(
         report["checkpoints"], key=lambda row: row["checkpoint_round"]
     )
-    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, require_complete=True)
     test_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
-    test_values = [
-        float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
-        for row in checkpoints
-    ]
+    test_values = measured_test_values(checkpoints)
     test_best_records = retrospective_test_best_so_far(test_rounds, test_values)
     test_best_values = [row["rank_ic"] for row in test_best_records]
 
-    milestone_rounds = list(range(0, snapshot_round + 1, 10))
+    milestone_rounds = list(range(0, snapshot_round + 1, CHECKPOINT_STEP))
     if not milestone_rounds or milestone_rounds[-1] != snapshot_round:
         milestone_rounds.append(snapshot_round)
     train_leaders = train_leaders_at_rounds(sequence, milestone_rounds)
@@ -614,7 +629,7 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     label_levels = [0.0670, 0.0712, 0.0754]
     y_max = max(label_levels) + 0.0022
     ax.set_ylim(y_min, y_max)
-    ax.set_xticks(list(range(0, 101, 10)))
+    ax.set_xticks(list(range(0, 101, CHECKPOINT_STEP)))
     ax.grid(axis="y", color=GRID, linewidth=0.85, alpha=0.78)
     ax.grid(axis="x", color=GRID, linewidth=0.6, alpha=0.42)
     ax.spines[["top", "right"]].set_visible(False)
@@ -634,12 +649,12 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
         ha="right", va="bottom", fontsize=8.8, color=MUTED,
     )
 
-    # Train uses only committed real evaluations and is sampled at R0/R10/.../snapshot.
+    # Train uses only committed real evaluations and is sampled at R0/R5/.../snapshot.
     ax.plot(
         train_rounds, train_values,
         color=ORANGE, linewidth=2.5, marker="o", markersize=6.6,
         markerfacecolor="white", markeredgewidth=2.0,
-        zorder=5, label="Train best-so-far · every 10 rounds",
+        zorder=5, label="Train best-so-far · every 5 rounds",
     )
     ax.fill_between(
         train_rounds, train_values, threshold,
@@ -778,17 +793,14 @@ def draw_trajectory_with_single_test(
     all_checkpoints = sorted(
         report["checkpoints"], key=lambda row: row["checkpoint_round"]
     )
-    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, require_complete=True)
     test_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
-    test_values = [
-        float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
-        for row in checkpoints
-    ]
+    test_values = measured_test_values(checkpoints)
     test_best_records = retrospective_test_best_so_far(test_rounds, test_values)
     test_best_values = [row["rank_ic"] for row in test_best_records]
     single_results = staged_single_test_results(checkpoints)
 
-    milestone_rounds = list(range(0, snapshot_round + 1, 10))
+    milestone_rounds = list(range(0, snapshot_round + 1, CHECKPOINT_STEP))
     if not milestone_rounds or milestone_rounds[-1] != snapshot_round:
         milestone_rounds.append(snapshot_round)
     train_leaders = train_leaders_at_rounds(sequence, milestone_rounds)
@@ -832,7 +844,7 @@ def draw_trajectory_with_single_test(
             linestyle=(0, (2, 4)), alpha=0.55, zorder=2,
         )
 
-    # Upper panel: unchanged Train story, sampled at every ten rounds.
+    # Upper panel: committed Train leaders, sampled at every five rounds.
     # Preserve the reference layout while allowing other seeds to exceed its scale.
     train_floor = min(0.0442, min(train_values) - 0.0010)
     label_floor = max(0.0664, max(train_values) + 0.0050)
@@ -841,9 +853,9 @@ def draw_trajectory_with_single_test(
     train_ax.set_ylabel("Train RankIC", fontsize=11.2, color=NAVY)
     train_ax.plot(
         train_rounds, train_values,
-        color=ORANGE, linewidth=2.6, marker="o", markersize=6.6,
+        color=ORANGE, linewidth=2.6, marker="o", markersize=5.4,
         markerfacecolor="white", markeredgewidth=2.0,
-        zorder=5, label="Train best-so-far · every 10 rounds",
+        zorder=5, label="Train best-so-far · every 5 rounds",
     )
     for index, leader in enumerate(train_leaders):
         round_id = int(leader["round"])
@@ -851,14 +863,15 @@ def draw_trajectory_with_single_test(
         train_ax.annotate(
             f"R{round_id} · {value:.4f}\n{short_name(leader['name'], max_chars=17)}",
             xy=(round_id, value), xycoords="data",
-            xytext=(min(96.0, max(4.0, float(round_id))),
-                    train_label_levels[index % len(train_label_levels)]),
+            xytext=(min(94.5, max(3.0, float(round_id))),
+                    train_label_levels[-1 if index == 0 else index % len(train_label_levels)]),
             textcoords="data", ha="center", va="center",
-            fontsize=7.0, color=NAVY, fontweight="semibold",
+            fontsize=6.5, color=NAVY, fontweight="bold",
             arrowprops={
                 "arrowstyle": "-", "color": ORANGE,
                 "linewidth": 0.9, "alpha": 0.58,
                 "shrinkA": 2.0, "shrinkB": 4.0,
+                "connectionstyle": "angle,angleA=0,angleB=90",
             },
             bbox={
                 "boxstyle": "round,pad=0.23,rounding_size=0.16",
@@ -869,7 +882,7 @@ def draw_trajectory_with_single_test(
         )
     train_ax.text(
         0.995, 1.018,
-        "Train leader snapshots from committed real evaluations",
+        "Committed Train leader snapshots · every 5 rounds",
         transform=train_ax.transAxes, ha="right", va="bottom",
         fontsize=8.4, color=MUTED,
     )
@@ -881,21 +894,17 @@ def draw_trajectory_with_single_test(
         single_values = [row["test_rank_ic"] for row in single_results]
         test_ax.set_ylim(min(single_values) - 0.0030, max(single_values) + 0.0033)
     else:
+        label_padding = max(0.0035, (max(test_values) - min(test_values)) * 0.15)
         test_ax.set_ylim(
             min(0.0340, min(test_values) - 0.0012),
-            max(max(test_values), illustrative_r100 or float("-inf")) + 0.0014,
+            max(max(test_values), illustrative_r100 or float("-inf")) + label_padding,
         )
     test_ax.set_ylabel("Test RankIC", fontsize=11.2, color=NAVY)
     test_ax.set_xlabel("LDM round", fontsize=11.5, color=NAVY, labelpad=9)
-    test_ax.set_xticks(list(range(0, 101, 10)))
+    test_ax.set_xticks(list(range(0, 101, CHECKPOINT_STEP)))
     test_ax.axhline(
         threshold, color="#AFA9B9", linewidth=1.35,
         linestyle=(0, (4, 3)), zorder=1,
-    )
-    test_ax.text(
-        99.5, threshold + 0.00035,
-        f"record threshold  {threshold:.3f}",
-        ha="right", va="bottom", fontsize=8.5, color=MUTED,
     )
     test_ax.plot(
         test_rounds, test_values,
@@ -949,14 +958,19 @@ def draw_trajectory_with_single_test(
     for index, record in enumerate(test_best_records):
         round_id = int(record["round"])
         value = float(record["raw_rank_ic"])
-        above = index % 2 == 0
+        above = bool(record["improved"]) or index % 2 == 0
+        envelope_gap = float(record["rank_ic"]) - value
+        if 1e-7 < envelope_gap < 0.16 * (test_ax.get_ylim()[1] - test_ax.get_ylim()[0]):
+            # Keep raw-audit labels out of the prominent cumulative envelope.
+            above = False
         test_ax.annotate(
-            f"R{round_id}  {value:.4f}",
+            f"R{round_id}\n{value:.4f}",
             (round_id, value), xytext=(0, 11 if above else -14),
             textcoords="offset points", ha="center",
-            va="bottom" if above else "top", fontsize=8.2,
+            va="bottom" if above else "top", fontsize=7.0,
             color=TEAL if record["improved"] else MUTED,
             fontweight="bold", zorder=10,
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.9, "pad": 0.8},
         )
 
     if show_single_test:
@@ -1029,7 +1043,8 @@ def draw_trajectory_with_single_test(
     )
     test_ax.text(
         0.995, 1.018,
-        "Raw Test audits shown · best-so-far is retrospective and never used for selection",
+        "Raw Test audits · best-so-far is retrospective, never used for selection"
+        f" · threshold {threshold:.3f}",
         transform=test_ax.transAxes, ha="right", va="bottom",
         fontsize=8.4, color=MUTED,
     )
@@ -1066,7 +1081,8 @@ def draw_trajectory_with_single_test(
         "available_checkpoint_rounds": [
             int(row["checkpoint_round"]) for row in all_checkpoints
         ],
-        "displayed_checkpoint_schedule": "R0/R10/.../R100",
+        "displayed_checkpoint_schedule": "R0/R5/.../R100",
+        "checkpoint_step": CHECKPOINT_STEP,
         "retrospective_test_best_so_far": test_best_records,
         "single_factor_points_displayed": show_single_test,
         "staged_single_factor_test_results": single_results if show_single_test else [],
@@ -1100,7 +1116,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, help="replicate label for the split Train/Test chart")
     parser.add_argument(
         "--chart-only", action="store_true",
-        help="draw only the trajectory chart, with 10-round Train milestones",
+        help="draw only the trajectory chart, with 5-round Train milestones",
     )
     parser.add_argument(
         "--single-test", action="store_true",

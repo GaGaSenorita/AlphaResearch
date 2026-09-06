@@ -11,12 +11,141 @@
       "history_observations": 342,
       "llm_calls_total": 988,
       "checkpoints": [
-        {"round": 20, "validation_rank_ic": 0.04849567, "test_rank_ic": 0.03556028, "qualifies": true},
-        {"round": 38, "validation_rank_ic": 0.05233538, "test_rank_ic": 0.03761907, "qualifies": true},
-        {"round": 50, "validation_rank_ic": 0.05233538, "test_rank_ic": 0.03761907, "qualifies": true},
-        {"round": 75, "validation_rank_ic": 0.05459069, "test_rank_ic": 0.03957906, "qualifies": true},
-        {"round": 100, "validation_rank_ic": 0.05306439, "test_rank_ic": 0.04243189, "qualifies": true}
-      ]
+        {
+          "round": 0,
+          "validation_rank_ic": 0.04370689385899817,
+          "test_rank_ic": 0.022413163052378157,
+          "qualifies": false
+        },
+        {
+          "round": 5,
+          "validation_rank_ic": 0.045456164874687066,
+          "test_rank_ic": 0.027160792540005224,
+          "qualifies": false
+        },
+        {
+          "round": 10,
+          "validation_rank_ic": 0.04849567050256778,
+          "test_rank_ic": 0.035560278355646416,
+          "qualifies": true
+        },
+        {
+          "round": 15,
+          "validation_rank_ic": 0.04849567050256778,
+          "test_rank_ic": 0.035560278355646416,
+          "qualifies": true
+        },
+        {
+          "round": 20,
+          "validation_rank_ic": 0.04849567050256778,
+          "test_rank_ic": 0.035560278355646416,
+          "qualifies": true
+        },
+        {
+          "round": 25,
+          "validation_rank_ic": 0.04849567050256778,
+          "test_rank_ic": 0.035560278355646416,
+          "qualifies": true
+        },
+        {
+          "round": 30,
+          "validation_rank_ic": 0.04849567050256778,
+          "test_rank_ic": 0.035560278355646416,
+          "qualifies": true
+        },
+        {
+          "round": 35,
+          "validation_rank_ic": 0.051490161442495054,
+          "test_rank_ic": 0.03808620261507442,
+          "qualifies": true
+        },
+        {
+          "round": 38,
+          "validation_rank_ic": 0.05233537580783206,
+          "test_rank_ic": 0.03761906847765277,
+          "qualifies": true
+        },
+        {
+          "round": 40,
+          "validation_rank_ic": 0.05233537580783206,
+          "test_rank_ic": 0.03761906847765277,
+          "qualifies": true
+        },
+        {
+          "round": 45,
+          "validation_rank_ic": 0.05233537580783206,
+          "test_rank_ic": 0.03761906847765277,
+          "qualifies": true
+        },
+        {
+          "round": 50,
+          "validation_rank_ic": 0.05233537580783206,
+          "test_rank_ic": 0.03761906847765277,
+          "qualifies": true
+        },
+        {
+          "round": 55,
+          "validation_rank_ic": 0.05233537580783206,
+          "test_rank_ic": 0.03761906847765277,
+          "qualifies": true
+        },
+        {
+          "round": 60,
+          "validation_rank_ic": 0.05459069398430281,
+          "test_rank_ic": 0.03957905577257804,
+          "qualifies": true
+        },
+        {
+          "round": 65,
+          "validation_rank_ic": 0.05459069398430281,
+          "test_rank_ic": 0.03957905577257804,
+          "qualifies": true
+        },
+        {
+          "round": 70,
+          "validation_rank_ic": 0.05459069398430281,
+          "test_rank_ic": 0.03957905577257804,
+          "qualifies": true
+        },
+        {
+          "round": 75,
+          "validation_rank_ic": 0.05459069398430281,
+          "test_rank_ic": 0.03957905577257804,
+          "qualifies": true
+        },
+        {
+          "round": 80,
+          "validation_rank_ic": 0.05459069398430281,
+          "test_rank_ic": 0.03957905577257804,
+          "qualifies": true
+        },
+        {
+          "round": 85,
+          "validation_rank_ic": 0.051684177155740876,
+          "test_rank_ic": 0.03863742969326889,
+          "qualifies": true
+        },
+        {
+          "round": 90,
+          "validation_rank_ic": 0.05306439052966464,
+          "test_rank_ic": 0.042431898520551424,
+          "qualifies": true
+        },
+        {
+          "round": 95,
+          "validation_rank_ic": 0.05306439052966464,
+          "test_rank_ic": 0.04243188883902932,
+          "qualifies": true
+        },
+        {
+          "round": 100,
+          "validation_rank_ic": 0.05306439052966464,
+          "test_rank_ic": 0.04243188883902932,
+          "qualifies": true
+        }
+      ],
+      "best_displayed_checkpoint_test_rank_ic": 0.042431898520551424,
+      "best_displayed_checkpoint_first_round": 90
     },
     {
       "seed": 123,
@@ -25,12 +154,141 @@
       "history_observations": 342,
       "llm_calls_total": 995,
       "checkpoints": [
-        {"round": 20, "validation_rank_ic": 0.05058984, "test_rank_ic": 0.03255054, "qualifies": false},
-        {"round": 38, "validation_rank_ic": 0.05577793, "test_rank_ic": 0.04528040, "qualifies": true},
-        {"round": 50, "validation_rank_ic": 0.06001029, "test_rank_ic": 0.04323021, "qualifies": true},
-        {"round": 75, "validation_rank_ic": 0.05781959, "test_rank_ic": 0.04503200, "qualifies": true},
-        {"round": 100, "validation_rank_ic": 0.05763833, "test_rank_ic": 0.04495599, "qualifies": true}
-      ]
+        {
+          "round": 0,
+          "validation_rank_ic": 0.04370689385899817,
+          "test_rank_ic": 0.022413163052378157,
+          "qualifies": false
+        },
+        {
+          "round": 5,
+          "validation_rank_ic": 0.053278849986105,
+          "test_rank_ic": 0.04863753637732572,
+          "qualifies": true
+        },
+        {
+          "round": 10,
+          "validation_rank_ic": 0.053278849986105,
+          "test_rank_ic": 0.04863753637732572,
+          "qualifies": true
+        },
+        {
+          "round": 15,
+          "validation_rank_ic": 0.053278849986105,
+          "test_rank_ic": 0.04863753637732572,
+          "qualifies": true
+        },
+        {
+          "round": 20,
+          "validation_rank_ic": 0.050589841684613286,
+          "test_rank_ic": 0.0325505403236064,
+          "qualifies": false
+        },
+        {
+          "round": 25,
+          "validation_rank_ic": 0.050589841684613286,
+          "test_rank_ic": 0.0325505403236064,
+          "qualifies": false
+        },
+        {
+          "round": 30,
+          "validation_rank_ic": 0.050589841684613286,
+          "test_rank_ic": 0.0325505403236064,
+          "qualifies": false
+        },
+        {
+          "round": 35,
+          "validation_rank_ic": 0.050589841684613286,
+          "test_rank_ic": 0.0325505403236064,
+          "qualifies": false
+        },
+        {
+          "round": 38,
+          "validation_rank_ic": 0.05577793380505724,
+          "test_rank_ic": 0.04528039862587724,
+          "qualifies": true
+        },
+        {
+          "round": 40,
+          "validation_rank_ic": 0.05577793380505724,
+          "test_rank_ic": 0.04528039862587724,
+          "qualifies": true
+        },
+        {
+          "round": 45,
+          "validation_rank_ic": 0.060010294332265714,
+          "test_rank_ic": 0.04323021120841784,
+          "qualifies": true
+        },
+        {
+          "round": 50,
+          "validation_rank_ic": 0.060010294332265714,
+          "test_rank_ic": 0.04323021120841784,
+          "qualifies": true
+        },
+        {
+          "round": 55,
+          "validation_rank_ic": 0.060010294332265714,
+          "test_rank_ic": 0.04323021120841784,
+          "qualifies": true
+        },
+        {
+          "round": 60,
+          "validation_rank_ic": 0.057819590363991,
+          "test_rank_ic": 0.045032009714460385,
+          "qualifies": true
+        },
+        {
+          "round": 65,
+          "validation_rank_ic": 0.057819590363991,
+          "test_rank_ic": 0.045032009714460385,
+          "qualifies": true
+        },
+        {
+          "round": 70,
+          "validation_rank_ic": 0.057819590363991,
+          "test_rank_ic": 0.045032009714460385,
+          "qualifies": true
+        },
+        {
+          "round": 75,
+          "validation_rank_ic": 0.057819590363991,
+          "test_rank_ic": 0.045031996129783675,
+          "qualifies": true
+        },
+        {
+          "round": 80,
+          "validation_rank_ic": 0.057819590363991,
+          "test_rank_ic": 0.045032009714460385,
+          "qualifies": true
+        },
+        {
+          "round": 85,
+          "validation_rank_ic": 0.05763833221389092,
+          "test_rank_ic": 0.044955992731750306,
+          "qualifies": true
+        },
+        {
+          "round": 90,
+          "validation_rank_ic": 0.05763833221389092,
+          "test_rank_ic": 0.044955992731750306,
+          "qualifies": true
+        },
+        {
+          "round": 95,
+          "validation_rank_ic": 0.05763833221389092,
+          "test_rank_ic": 0.044955992731750306,
+          "qualifies": true
+        },
+        {
+          "round": 100,
+          "validation_rank_ic": 0.05763833221389092,
+          "test_rank_ic": 0.044955992731750306,
+          "qualifies": true
+        }
+      ],
+      "best_displayed_checkpoint_test_rank_ic": 0.04863753637732572,
+      "best_displayed_checkpoint_first_round": 5
     },
     {
       "seed": 456,
@@ -39,12 +297,165 @@
       "history_observations": 342,
       "llm_calls_total": 826,
       "checkpoints": [
-        {"round": 20, "validation_rank_ic": 0.05268940, "test_rank_ic": 0.03831264, "qualifies": true},
-        {"round": 38, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
-        {"round": 50, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
-        {"round": 75, "validation_rank_ic": 0.05276145, "test_rank_ic": 0.03836634, "qualifies": true},
-        {"round": 100, "validation_rank_ic": 0.04730262, "test_rank_ic": 0.03361301, "qualifies": false}
-      ]
+        {
+          "round": 0,
+          "validation_rank_ic": 0.04370689385899817,
+          "test_rank_ic": 0.022413163052378157,
+          "qualifies": false
+        },
+        {
+          "round": 5,
+          "validation_rank_ic": 0.043284216458327765,
+          "test_rank_ic": 0.03649616743960741,
+          "qualifies": true
+        },
+        {
+          "round": 10,
+          "validation_rank_ic": 0.047786161441363294,
+          "test_rank_ic": 0.034457881528119065,
+          "qualifies": false
+        },
+        {
+          "round": 15,
+          "validation_rank_ic": 0.052689401670905744,
+          "test_rank_ic": 0.03831263947494063,
+          "qualifies": true
+        },
+        {
+          "round": 20,
+          "validation_rank_ic": 0.052689401670905744,
+          "test_rank_ic": 0.03831263947494063,
+          "qualifies": true
+        },
+        {
+          "round": 25,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 30,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 35,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 38,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 40,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 45,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 50,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 55,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 60,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 65,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 70,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 75,
+          "validation_rank_ic": 0.052761447107445944,
+          "test_rank_ic": 0.038366343757972446,
+          "qualifies": true
+        },
+        {
+          "round": 80,
+          "validation_rank_ic": 0.047302668624565634,
+          "test_rank_ic": 0.03361301079814106,
+          "qualifies": false
+        },
+        {
+          "round": 85,
+          "validation_rank_ic": 0.047302623009486504,
+          "test_rank_ic": 0.03361301079814106,
+          "qualifies": false
+        },
+        {
+          "round": 90,
+          "validation_rank_ic": 0.047302668624565634,
+          "test_rank_ic": 0.03361301079814106,
+          "qualifies": false
+        },
+        {
+          "round": 95,
+          "validation_rank_ic": 0.047302623009486504,
+          "test_rank_ic": 0.03361301079814106,
+          "qualifies": false
+        },
+        {
+          "round": 100,
+          "validation_rank_ic": 0.047302623009486504,
+          "test_rank_ic": 0.03361301079814106,
+          "qualifies": false
+        }
+      ],
+      "best_displayed_checkpoint_test_rank_ic": 0.038366343757972446,
+      "best_displayed_checkpoint_first_round": 25
     }
-  ]
+  ],
+  "displayed_checkpoint_rounds": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100
+  ],
+  "checkpoint_reporting": "Measured post-hoc reports; search state and original checkpoint records unchanged"
 }

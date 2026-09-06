@@ -81,8 +81,8 @@ Each run writes:
 - `factor_ledger.jsonl`: append-only factor evaluations and round commits;
 - `resume_state.json`: last safe round, RNG state, search signature, and GP size;
 - `factor_sequence.json`: every saved factor in real evaluation order;
-- `top5_combinations.json`: R0/R10/... checkpoint Validation Top-5 and measured
-  Test audit;
+- `top5_combinations.json`: configured checkpoint Validation Top-5 and measured
+  Test audits (the preserved R100 runs include the complete R0/R5/.../R100 grid);
 - `events.jsonl`, `search.json`, `validation_selection.json`, and `summary.json`.
 
 Use `scripts/run_ldm_continuous_discovery.sh TARGET_ROUNDS SEED` on the original
@@ -120,7 +120,7 @@ current Pareto membership, frozen normalisation/reference point, and final
 normalised hypervolume. Validation retains the standard RankIC Top-30 selection
 under the 0.8 daily-RankIC correlation boundary, and Test remains report-only.
 
-To backfill the denser R0/R10/.../R100 reporting schedule from preserved factor
+To backfill the denser R0/R5/.../R100 reporting schedule from preserved factor
 sequences without rerunning discovery or calling the LLM, start the real FFO
 evaluator and run:
 
@@ -131,6 +131,22 @@ python scripts/backfill_ldm_checkpoint_reports.py --seeds 42 123 456
 Use `--dry-run` first to list missing checkpoints. Backfill evaluates and
 selects on Validation, audits the frozen Top-5 on Test, writes a separate
 `checkpoint_backfill_events.jsonl`, and never changes search state.
+
+The three preserved R100 runs already contain all 21 five-round checkpoints.
+To redraw the three individual Train/Test figures, their copies inside each
+run, and the combined comparison, no evaluator, market data or API key is needed:
+
+```bash
+python scripts/render_ldm_report_figures.py
+```
+
+All four figures are saved as PNG, SVG, PDF and JSON under `figures/`. Train
+leaders and measured Validation-selected Top-5 Test pools are sampled at
+R0/R5/.../R100. Individual figures retain the raw Test audits alongside their
+explicitly retrospective best-so-far envelope; the combined figure shows the
+three envelopes and preserves the raw measurements in its JSON. No Test points
+are interpolated or fed back into discovery. Off-grid legacy reports such as
+R38 remain in the run archive but are excluded from the regular plotted grid.
 
 ## Single-factor library
 

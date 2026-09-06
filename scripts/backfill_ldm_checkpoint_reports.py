@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Backfill R0/R10/... reports for preserved continual-discovery runs.
+"""Backfill R0/R5/... reports for preserved continual-discovery runs.
 
 The script reads the committed ``factor_sequence.json`` and never invokes an
 LLM or changes search state. At each requested round it evaluates all then-
@@ -187,7 +187,7 @@ def main() -> int:
     parser.add_argument("--config", default=DEFAULT_CONFIG)
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 123, 456])
     parser.add_argument("--target-round", type=int, default=100)
-    parser.add_argument("--checkpoint-step", type=int, default=10)
+    parser.add_argument("--checkpoint-step", type=int, default=5)
     parser.add_argument(
         "--eval-parallel", type=int,
         help="override evaluator request parallelism for reporting-only backfill",
