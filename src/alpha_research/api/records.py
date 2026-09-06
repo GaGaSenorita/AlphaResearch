@@ -41,8 +41,8 @@ def checkpoint_view(record: dict) -> dict:
     selected = []
     for row in record.get("selected_top5_validation_order", []):
         selected.append({**factor_view(row), "validation_rank": row.get("validation_rank"),
-                         "validation_rank_ic": number((row.get("validation") or {}).get("metrics", {}).get("rank_ic")),
-                         "test_rank_ic": number((row.get("test") or {}).get("metrics", {}).get("rank_ic"))})
+                         "validation_rank_ic": number(row["validation"].get("metrics", {}).get("rank_ic")) if (row.get("validation") or {}).get("success") else None,
+                         "test_rank_ic": number(row["test"].get("metrics", {}).get("rank_ic")) if (row.get("test") or {}).get("success") else None})
     return {"round": int(record["checkpoint_round"]), "rank_ic": test,
             "validation_rank_ic": val, "measured": test is not None,
             "qualified": test is not None and test >= .035,

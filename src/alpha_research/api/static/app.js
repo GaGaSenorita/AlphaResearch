@@ -17,6 +17,14 @@ async function api(path, options={}) {
   return body;
 }
 function alertMessage(message) { $('alert').hidden=!message; $('alert').textContent=message||''; }
+function readableError(message) {
+  const text=String(message||'');
+  if(/HTTP 504|Gateway Time-out|timed out/i.test(text))return '模型网关响应超时（504 / timeout）';
+  if(/HTTP 429/i.test(text))return '模型接口限流（HTTP 429）';
+  if(/HTTP 401|HTTP 403/i.test(text))return '模型接口认证或访问权限异常';
+  if(/insufficient|quota exceeded|HTTP 402/i.test(text))return '模型接口额度不足';
+  return text.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,240);
+}
 function toast(message) { $('toast').textContent=message; $('toast').hidden=false; setTimeout(()=>$('toast').hidden=true,2200); }
 function duration(seconds) {
   if (!Number.isFinite(seconds)) return '—';
@@ -30,7 +38,7 @@ function setMode(value, reset=true) {
   $('start').innerHTML=mode==='mock'?'<span class="play-icon">▶</span> 开始回放':'<span class="play-icon">▶</span> 启动真实搜索';
   $('mode-badge').textContent=mode==='mock'?'HISTORICAL REPLAY':'ONLINE RESEARCH';
   $('live-label').textContent=mode==='mock'?'REPLAY':'LIVE';
-  if (reset) { current=null; localStorage.removeItem('alphaldm-current'); renderKey=''; preview(); renderSessions(); }
+  if (reset) { current=null; localStorage.removeItem('alphaldm-current');history.replaceState(null,'',location.pathname);renderKey=''; preview(); renderSessions(); }
 }
 function preview() {
   const item=archives.find(a=>a.seed===Number($('seed').value));
@@ -91,7 +99,7 @@ function render(value) {
   $('run-dot').className='status-dot '+(active?'running':value.status==='failed'?'failed':'ready');
   $('run-seed').textContent=`SEED ${value.seed??$('seed').value}`;
   $('run-time').textContent=value.mode==='mock'?`${value.interval_seconds||$('speed').value}s / 5 rounds`:`R${value.active_round??round} · 每 5 轮更新`;
-  $('phase-name').textContent=phaseNames[value.stage]||'等待开始';$('phase-detail').textContent=value.mode==='mock'?'历史结果按原始顺序展示，不调用 LLM。':`${value.message||'实时搜索准备就绪。'}${value.phase_total?` · ${value.phase_completed||0}/${value.phase_total}`:''}`;
+  $('phase-name').textContent=phaseNames[value.stage]||'等待开始';$('phase-detail').textContent=value.mode==='mock'?'历史结果按原始顺序展示，不调用 LLM。':`${value.message||'实时搜索准备就绪。'}${value.phase_total?` · ${value.phase_completed||0}/${value.phase_total}`:''}${value.stage==='proposal'&&value.provider_requests?` · 模型响应 ${value.provider_responses||0}/${value.provider_requests}`:''}`;
   $('round-duration').textContent=value.mode==='mock'?'历史回放':duration(value.last_round_seconds);
   $('stage-duration').textContent=value.mode==='online'&&active&&value.stage_started_at?duration(Date.now()/1000-value.stage_started_at):'—';
   document.querySelectorAll('.phase-steps span').forEach(el=>el.classList.toggle('active',value.mode==='online'&&(el.dataset.stage===value.stage||(el.dataset.stage==='surrogate'&&value.stage==='acquisition'))));
@@ -109,7 +117,7 @@ function render(value) {
   $('footer-state').textContent=current?`SESSION ${current.slice(0,8)} · ${value.mode==='mock'?'HISTORICAL REPLAY':'LIVE RESEARCH'}`:'Measured research. Visible progress.';
   const key=JSON.stringify([value.train,value.test,value.test_best_so_far,total,$('envelope').checked]);
   if(key!==renderKey){renderKey=key;drawChart('train',value.train||[],[],total);drawChart('test',value.test||[],value.test_best_so_far||[],total);}
-  if(value.error)alertMessage(value.error);else if(value.last_provider_error)alertMessage(`模型接口响应异常：${value.last_provider_error}`);else if(value.reporting_warning)alertMessage(`搜索进度已保存，阶段报告待补齐：${value.reporting_warning}`);else if(pollErrors===0)alertMessage('');
+  if(value.error)alertMessage(`${readableError(value.error)}。已提交进度保留，详细错误可导出查看。`);else if(value.last_provider_error)alertMessage(`${readableError(value.last_provider_error)}。任务仍在运行，已提交进度保留。`);else if(value.reporting_warning)alertMessage(`搜索进度已保存，阶段报告待补齐：${readableError(value.reporting_warning)}`);else if(pollErrors===0)alertMessage('');
   const item=jobs.find(j=>j.id===current);
   if(item&&(item.status!==value.status||item.committed_round!==round)){Object.assign(item,{status:value.status,committed_round:round});renderSessions();}
 }
@@ -119,7 +127,7 @@ function renderSessions() {
 }
 async function sessions() {if(sessionBusy)return;sessionBusy=true;try{jobs=(await api('/api/runs')).runs;renderSessions();}catch{}finally{sessionBusy=false;}}
 async function selectJob(id) {
-  current=id;localStorage.setItem('alphaldm-current',id);renderKey='';
+  current=id;localStorage.setItem('alphaldm-current',id);history.replaceState(null,'',`${location.pathname}?run=${encodeURIComponent(id)}`);renderKey='';
   try{const value=await api('/api/runs/'+id);if(current!==id)return;setMode(value.mode,false);$('seed').value=String(value.seed);$('target').value=value.target_rounds;$('speed').value=value.interval_seconds;$('speed-value').textContent=value.interval_seconds+' s';render(value);renderSessions();}
   catch(error){alertMessage(error.message);}
 }
@@ -137,5 +145,5 @@ $('pause').onclick=async()=>{if(!current)return;try{await api(`/api/runs/${curre
 $('resume').onclick=async()=>{if(!current)return;try{const body={interval_seconds:Number($('speed').value)};if(mode==='online')body.target_rounds=Number($('target').value);await api(`/api/runs/${current}/resume`,{method:'POST',body:JSON.stringify(body)});await poll();await sessions();}catch(error){alertMessage(error.message);}};
 $('envelope').onchange=()=>{if(data)render(data);};$('copy-formula').onclick=async()=>{try{await navigator.clipboard.writeText(data.best_factor.expression);toast('公式已复制');}catch{toast('请直接选择公式并复制');}};
 $('export').onclick=()=>{if(current)window.location.href=`/api/runs/${current}/export`;};
-async function init(){try{archives=(await api('/api/archives')).archives;await sessions();const saved=localStorage.getItem('alphaldm-current');if(saved&&jobs.some(j=>j.id===saved))await selectJob(saved);else preview();}catch(error){alertMessage(error.message);preview();}readiness();setInterval(poll,1000);setInterval(sessions,4000);setInterval(readiness,30000);}
+async function init(){try{archives=(await api('/api/archives')).archives;await sessions();const saved=new URLSearchParams(location.search).get('run')||localStorage.getItem('alphaldm-current');if(saved&&jobs.some(j=>j.id===saved))await selectJob(saved);else preview();}catch(error){alertMessage(error.message);preview();}readiness();setInterval(poll,1000);setInterval(sessions,4000);setInterval(readiness,30000);}
 init();

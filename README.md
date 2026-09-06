@@ -47,6 +47,8 @@ real DeepSeek V4 Flash requests and the local evaluator. See
 pause/resume, and deployment instructions. Existing experiments are preserved;
 new live jobs write to `runtime/api/jobs/`.
 
+![AlphaLDM Discovery Console showing the measured seed-42 replay](docs/images/api-console.png)
+
 ## Installation
 
 Python 3.10 or 3.11 is recommended on Linux.

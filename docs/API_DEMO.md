@@ -32,6 +32,8 @@ limited to the currently revealed round.
 This mode reads `demo/replays/seed<seed>.json`. It never invokes a proposer,
 profiler, market evaluator, or paid LLM. Pause/resume, refresh/reconnect, recent
 sessions, formula copying, and JSON export are supported.
+The address bar includes `?run=<id>` for a selected session, so its URL can be
+bookmarked and reopened against the same API server.
 
 The original snapshots had ten-round checkpoints plus R38/R75. The missing
 five-round checkpoints were prepared separately with the existing Validation

@@ -49,11 +49,16 @@ def test_replay_is_measured_ordered_and_has_no_future_factors(seed):
 
 
 def test_failed_test_is_missing_not_zero():
-    row = {"checkpoint_round": 5, "test_equal_weight_rank_pool": {"success": False, "metrics": {"rank_ic": 0}}}
+    row = {"checkpoint_round": 5, "test_equal_weight_rank_pool": {"success": False, "metrics": {"rank_ic": 0}},
+           "selected_top5_validation_order": [{"candidate": {"name": "example", "expression": "$close"},
+               "test": {"success": False, "metrics": {"rank_ic": 0}},
+               "validation": {"success": True, "metrics": {"rank_ic": .03}}}]}
     point = checkpoint_view(row)
     assert point["rank_ic"] is None
     assert point["measured"] is False
     assert point["qualified"] is False
+    assert point["top5"][0]["test_rank_ic"] is None
+    assert point["top5"][0]["validation_rank_ic"] == .03
 
 
 def test_train_snapshot_uses_only_committed_rounds():
