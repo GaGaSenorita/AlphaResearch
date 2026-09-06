@@ -5,11 +5,5 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - -e .[dev]
+      - -e .[dev,ffo]
       - -e external/AlphaBench
-      # Imported by AlphaBench's FFO expression parser but missing from its
-      # upstream package metadata.
-      - zss>=1.2.0
-      # Required by AlphaBench's `ppo start backend` command but likewise not
-      # declared by the upstream package.
-      - gunicorn>=23.0.0

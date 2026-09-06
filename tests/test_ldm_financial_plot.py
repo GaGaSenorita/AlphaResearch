@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.util
 import hashlib
 import json
 from pathlib import Path
@@ -8,11 +7,28 @@ from pathlib import Path
 import pytest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "plot_ldm_financial_mining.py"
-SPEC = importlib.util.spec_from_file_location("plot_ldm_financial_mining", SCRIPT)
-assert SPEC is not None and SPEC.loader is not None
-PLOT = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(PLOT)
+from alpha_research.reporting import data as PLOT
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.parametrize("seed", [42, 123, 456])
+def test_refactored_renderer_preserves_measured_figure_and_metadata(tmp_path, seed):
+    from alpha_research.reporting.financial import draw_financial_trajectory
+    from PIL import Image, ImageChops
+
+    run = ROOT / "runs/ldm_continuous_discovery" / (
+        f"ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed{seed}"
+    )
+    old_prefix = ROOT / "figures" / f"ldm_financial_mining_seed{seed}_round100"
+    actual = draw_financial_trajectory(run, tmp_path / "figure", seed=seed)
+    expected = PLOT.load_json(old_prefix.with_suffix(".json"))
+    assert {k: v for k, v in actual.items() if k != "outputs"} == {
+        k: v for k, v in expected.items() if k != "outputs"
+    }
+    with Image.open(old_prefix.with_suffix(".png")) as old, Image.open(tmp_path / "figure.png") as new:
+        assert old.size == new.size
+        assert ImageChops.difference(old.convert("RGB"), new.convert("RGB")).getbbox() is None
 
 
 def test_retrospective_test_best_so_far_keeps_raw_values_and_source_rounds():
@@ -62,7 +78,7 @@ def test_plot_rejects_invalid_test_measurement(success, value):
 
 @pytest.mark.parametrize("seed", [42, 123, 456])
 def test_preserved_five_round_reports_are_complete_and_do_not_rewrite_search(seed):
-    root = SCRIPT.parents[1]
+    root = ROOT
     run = root / "runs/ldm_continuous_discovery" / (
         f"ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed{seed}"
     )

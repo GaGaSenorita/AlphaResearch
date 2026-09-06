@@ -12,7 +12,7 @@ import argparse
 import json
 from pathlib import Path
 
-from alpha_research.cli import append_cli_arg, build_expansion_context, expand_value, load_config
+from alpha_research.cli import resolved_runner_args
 from alpha_research.factor_library import (
     LIBRARY_SCHEMA,
     build_single_factor_library,
@@ -23,7 +23,6 @@ from alpha_research.io import append_jsonl
 from alpha_research.runner import (
     REPO_ROOT,
     build_evaluator,
-    parse_args as parse_runner_args,
     resolve_repo_path,
 )
 from alpha_research.types import FactorCandidate, Period
@@ -33,26 +32,6 @@ DEFAULT_CONFIG = (
     "configs/ldm_continuous_discovery/"
     "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025.yaml"
 )
-
-
-def _resolved_runner_args(config_path: Path, *, seed: int) -> argparse.Namespace:
-    config = load_config(config_path)
-    raw_args = dict(config.get("args") or {})
-    raw_args["ldm-random-seed"] = seed
-    context = build_expansion_context(config, raw_args, config_path)
-    argv = [
-        "--environment",
-        str(config["environment"]),
-        "--method",
-        str(config["method"]),
-    ]
-    for key, value in raw_args.items():
-        append_cli_arg(
-            argv,
-            str(key),
-            expand_value(value, config_path, context=context),
-        )
-    return parse_runner_args(argv)
 
 
 def _build(
@@ -131,7 +110,9 @@ def main() -> int:
         print(json.dumps({**preview, "evaluated": 0}, indent=2, ensure_ascii=False))
         return 0
 
-    runner_args = _resolved_runner_args(options.config.resolve(), seed=options.seeds[0])
+    runner_args = resolved_runner_args(
+        options.config.resolve(), overrides={"ldm-random-seed": options.seeds[0]},
+    )
     runner_args.eval_parallel = options.parallel
     validation_period = Period.from_strings(runner_args.val_start, runner_args.val_end)
     evaluator = build_evaluator(

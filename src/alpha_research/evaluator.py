@@ -6,7 +6,7 @@ import hashlib
 import json
 import math
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Callable, Protocol, Sequence
 
@@ -707,7 +707,11 @@ class AlphaBenchFFOEvaluator:
 
 
 class MockFactorEvaluator:
-    """Stable pseudo-metrics for unit tests; never used by real experiments."""
+    """Deterministic synthetic weekday metrics, never real market measurements.
+
+    Cover the requested period with ISO dates so quarterly objectives exercise
+    the same aggregation contract. Weekdays are not an exchange calendar.
+    """
 
     def __init__(
         self,
@@ -751,15 +755,22 @@ class MockFactorEvaluator:
         ).digest()
         shift = (int.from_bytes(period_digest[:2], "big") / 65535.0 - 0.5) * 0.02
         daily: list[dict[str, Any]] = []
-        for index in range(5):
-            noise = ((digest[4 + index] / 255.0) - 0.5) * 0.03
+        dates = (
+            period.start + timedelta(days=offset)
+            for offset in range((period.end - period.start).days + 1)
+        )
+        for index, day in enumerate(day for day in dates if day.weekday() < 5):
+            # Independent, reproducible per-date noise avoids an artificial
+            # five-day cycle that collapses Validation correlation filtering.
+            day_digest = hashlib.sha256(f"{expression}:{day.isoformat()}".encode()).digest()
+            noise = (int.from_bytes(day_digest[:4], "big") / (2**32 - 1) - 0.5) * 0.03
             rank_ic = base + shift + noise
             daily.append({
-                "date": f"{period.start.isoformat()}+{index}",
+                "date": day.isoformat(),
                 "ic": rank_ic * 0.9,
                 "rank_ic": rank_ic,
                 "quantile_spread": rank_ic * 0.01,
-                "turnover": None if index == 0 else 0.15 + digest[10 + index] / 2550.0,
+                "turnover": None if index == 0 else 0.15 + day_digest[4] / 2550.0,
                 "observation_count": self.min_observations,
             })
         metrics = aggregate_daily_metrics(daily)

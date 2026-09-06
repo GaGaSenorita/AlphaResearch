@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import importlib
+import hashlib
+import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Callable
@@ -12,6 +15,59 @@ from .types import FactorCandidate
 
 
 PINNED_COMMIT = "31bb94bbb7744177c51c9d011e07c31e3092b93e"
+INTEGRATION_DIR = Path(__file__).resolve().parents[2] / "integrations" / "alphabench"
+
+
+def checkout_revision(root: Path) -> str:
+    """Resolve both ordinary Git checkouts and submodule/worktree .git files."""
+    result = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        capture_output=True, text=True, check=True,
+    )
+    return result.stdout.strip()
+
+
+def configure_verified_evaluator(
+    root: Path, *, apply: bool = False, integration_dir: Path = INTEGRATION_DIR,
+) -> str:
+    """Check or explicitly apply the pinned FFO patch without overwriting edits.
+
+    A pristine checkout and an exactly patched checkout are the only accepted
+    states. All targets and the patch are checked before any file is changed.
+    No imports of the upstream server, credentials or market data are needed.
+    """
+    root = root.expanduser().resolve()
+    manifest = json.loads((integration_dir / "manifest.json").read_text())
+    if checkout_revision(root) != manifest["upstream_commit"]:
+        raise RuntimeError("AlphaBench revision differs from the pinned integration")
+    patch = integration_dir / "verified-evaluation.patch"
+    if hashlib.sha256(patch.read_bytes()).hexdigest() != manifest["patch_sha256"]:
+        raise RuntimeError("AlphaBench integration patch checksum mismatch")
+    expected_files = {"ffo/routes/factors.py", "ffo/utils/utils.py"}
+    if set(manifest["files"]) != expected_files:
+        raise RuntimeError("Unexpected AlphaBench integration targets")
+    states = set()
+    for name, hashes in manifest["files"].items():
+        target = root / name
+        if target.is_symlink() or not target.is_file():
+            raise RuntimeError(f"Missing or symlinked integration target: {name}")
+        if not target.resolve().is_relative_to(root):
+            raise RuntimeError(f"Integration target escapes checkout: {name}")
+        digest = hashlib.sha256(target.read_bytes()).hexdigest()
+        if digest == hashes["patched_sha256"]:
+            states.add("patched")
+        elif digest == hashes["upstream_sha256"]:
+            states.add("upstream")
+        else:
+            raise RuntimeError(f"Local modifications in {name}; refusing to overwrite")
+    if len(states) != 1:
+        raise RuntimeError("Partially patched AlphaBench checkout; refusing to overwrite")
+    state = states.pop()
+    if state == "patched" or not apply:
+        return state
+    subprocess.run(["git", "-C", str(root), "apply", "--check", str(patch)], check=True)
+    subprocess.run(["git", "-C", str(root), "apply", str(patch)], check=True)
+    return configure_verified_evaluator(root, integration_dir=integration_dir)
 
 
 def resolve_alphabench_root(root: str | Path) -> Path:
@@ -26,13 +82,11 @@ def resolve_alphabench_root(root: str | Path) -> Path:
         raise FileNotFoundError(
             f"AlphaBench checkout is incomplete at {path}; missing: {', '.join(missing)}"
         )
-    head_file = path / ".git" / "HEAD"
-    if head_file.is_file():
-        head = head_file.read_text(encoding="utf-8").strip()
-        if len(head) == 40 and head != PINNED_COMMIT:
-            raise RuntimeError(
-                f"AlphaBench checkout is at {head}, expected pinned commit {PINNED_COMMIT}"
-            )
+    head = checkout_revision(path)
+    if head != PINNED_COMMIT:
+        raise RuntimeError(
+            f"AlphaBench checkout is at {head}, expected pinned commit {PINNED_COMMIT}"
+        )
     return path
 
 

@@ -15,10 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from alpha_research.cli import (
-    append_cli_arg,
-    build_expansion_context,
-    expand_value,
-    load_config,
+    resolved_runner_args as resolve_config_args,
     resolve_config_path,
 )
 from alpha_research.io import append_jsonl, read_json
@@ -27,7 +24,6 @@ from alpha_research.naming import standard_output_dir
 from alpha_research.runner import (
     REPO_ROOT,
     build_evaluator,
-    parse_args as parse_runner_args,
     resolve_repo_path,
 )
 from alpha_research.types import Period
@@ -58,25 +54,14 @@ def resolved_runner_args(
     checkpoints: list[int],
     eval_parallel: int | None = None,
 ) -> argparse.Namespace:
-    config = load_config(config_path)
-    raw_args = dict(config.get("args") or {})
-    raw_args["ldm-random-seed"] = seed
-    raw_args["search-rounds"] = target_round
-    raw_args["continuous-checkpoint-round"] = checkpoints
+    overrides = {
+        "ldm-random-seed": seed,
+        "search-rounds": target_round,
+        "continuous-checkpoint-round": checkpoints,
+    }
     if eval_parallel is not None:
-        raw_args["eval-parallel"] = max(1, int(eval_parallel))
-    context = build_expansion_context(config, raw_args, config_path)
-    argv = [
-        "--environment", str(config["environment"]),
-        "--method", str(config["method"]),
-    ]
-    for key, value in raw_args.items():
-        append_cli_arg(
-            argv,
-            str(key),
-            expand_value(value, config_path, context=context),
-        )
-    return parse_runner_args(argv)
+        overrides["eval-parallel"] = max(1, int(eval_parallel))
+    return resolve_config_args(config_path, overrides=overrides)
 
 
 def existing_checkpoint_rounds(run_dir: Path) -> list[int]:
@@ -160,12 +145,11 @@ def backfill_one(
 
     plot_metadata = None
     if render:
-        from plot_ldm_financial_mining import draw_trajectory_with_single_test
+        from alpha_research.reporting.financial import draw_financial_trajectory
 
-        plot_metadata = draw_trajectory_with_single_test(
+        plot_metadata = draw_financial_trajectory(
             run_dir,
             run_dir / "figure",
-            show_single_test=False,
             seed=seed,
         )
     return {

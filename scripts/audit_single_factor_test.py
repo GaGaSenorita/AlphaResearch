@@ -13,6 +13,7 @@ import argparse
 import json
 from pathlib import Path
 
+from alpha_research.cli import resolved_runner_args
 from alpha_research.factor_library import (
     LIBRARY_SCHEMA,
     build_single_factor_library,
@@ -23,7 +24,10 @@ from alpha_research.io import append_jsonl
 from alpha_research.runner import REPO_ROOT, build_evaluator, resolve_repo_path
 from alpha_research.types import FactorCandidate, Period
 
-from backfill_single_factor_validation import DEFAULT_CONFIG, _resolved_runner_args
+DEFAULT_CONFIG = (
+    "configs/ldm_continuous_discovery/"
+    "ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025.yaml"
+)
 
 
 def _build(
@@ -108,7 +112,9 @@ def main() -> int:
         print(json.dumps({**preview, "evaluated": 0}, indent=2, ensure_ascii=False))
         return 0
 
-    runner_args = _resolved_runner_args(options.config.resolve(), seed=options.seeds[0])
+    runner_args = resolved_runner_args(
+        options.config.resolve(), overrides={"ldm-random-seed": options.seeds[0]},
+    )
     runner_args.eval_parallel = options.parallel
     test_period = Period.from_strings(runner_args.test_start, runner_args.test_end)
     evaluator = build_evaluator(

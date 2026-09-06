@@ -1,0 +1,11 @@
+"""Shared palette for scientific figures."""
+
+PURPLE = "#6D43C7"
+PURPLE_DARK = "#48218B"
+TEAL = "#159E9A"
+ORANGE = "#E89B28"
+NAVY = "#17223B"
+MUTED = "#72768A"
+RAW_TEST = "#9A96A6"
+GRID = "#DDD9E7"
+PAPER = "#FBFAF7"

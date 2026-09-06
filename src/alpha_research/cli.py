@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from alpha_research.naming import CANONICAL_METHODS, random_seed, standard_run_name
+from alpha_research.arguments import parse_args as parse_runner_args
 from alpha_research.runner import main as run_static_experiment
 
 
@@ -56,7 +57,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def run_config(config: dict[str, Any], config_path: Path, *, dry_run: bool = False) -> None:
+def config_to_argv(config: dict[str, Any], config_path: Path) -> list[str]:
+    """Expand one experiment using the same contract for search and reporting."""
     validate_config(config, config_path)
     method = str(config["method"])
     environment = str(config["environment"])
@@ -70,6 +72,20 @@ def run_config(config: dict[str, Any], config_path: Path, *, dry_run: bool = Fal
             str(key),
             expand_value(value, config_path, context=expansion_context),
         )
+    return argv
+
+
+def resolved_runner_args(
+    config_path: Path, *, overrides: dict[str, Any] | None = None,
+) -> argparse.Namespace:
+    """Resolve configuration without constructing an evaluator or starting a run."""
+    config = load_config(config_path)
+    config["args"] = {**(config.get("args") or {}), **(overrides or {})}
+    return parse_runner_args(config_to_argv(config, config_path))
+
+
+def run_config(config: dict[str, Any], config_path: Path, *, dry_run: bool = False) -> None:
+    argv = config_to_argv(config, config_path)
     if dry_run:
         argv.append("--dry-run")
     print(f"[alpha-research] {config.get('name', config_path.stem)}")

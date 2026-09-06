@@ -10,8 +10,8 @@ import json
 import shutil
 from pathlib import Path
 
-from plot_ldm_financial_mining import draw_trajectory_with_single_test
-from plot_ldm_three_seed_comparison import _load_seed, draw_comparison
+from alpha_research.reporting.financial import draw_financial_trajectory
+from alpha_research.reporting.comparison import load_seed_report, draw_comparison
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,12 +31,11 @@ def main() -> int:
     }
     # Validate all 21 measurements per seed before overwriting any figure.
     for seed, run_dir in seed_dirs.items():
-        _load_seed(seed, run_dir)
+        load_seed_report(seed, run_dir)
     for seed, run_dir in seed_dirs.items():
-        metadata = draw_trajectory_with_single_test(
+        metadata = draw_financial_trajectory(
             run_dir,
             ROOT / "figures" / f"ldm_financial_mining_seed{seed}_round100",
-            show_single_test=False,
             seed=seed,
         )
         clean_svg_whitespace(Path(metadata["outputs"]["svg"]))

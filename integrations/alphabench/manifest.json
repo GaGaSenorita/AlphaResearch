@@ -1,0 +1,14 @@
+{
+  "upstream_commit": "31bb94bbb7744177c51c9d011e07c31e3092b93e",
+  "patch_sha256": "8199f698b20f3112b7ec3dcfa576ef436515ed3fc4bea0490b8c9989f854b24d",
+  "files": {
+    "ffo/routes/factors.py": {
+      "upstream_sha256": "e9ccb8ee97dc155f9c6480ecebb907e390c908e50742cc38b31ce83797d311d5",
+      "patched_sha256": "1892f251264e5e89840fdab1889f78d59dc01d29f9837355ea33a0c40f5a7212"
+    },
+    "ffo/utils/utils.py": {
+      "upstream_sha256": "6fa58d3c69d03c0c8d27be7e707eb68def968355558b2fbab96debf1a6d43146",
+      "patched_sha256": "673ac89e63eb076b329ce66ab4157aa09427872f361bf6354f70f6c7ccac81b3"
+    }
+  }
+}

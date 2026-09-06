@@ -1,0 +1,334 @@
+--- a/ffo/routes/factors.py
++++ b/ffo/routes/factors.py
+@@ -13,6 +13,7 @@
+ 
+ import os
+ import logging
++import math
+ from datetime import datetime, timezone
+ 
+ from flask import Blueprint, request, jsonify
+@@ -113,16 +114,43 @@
+         "start_date": start,
+         "end_date": end,
+         "metrics": {
+-            "ic": 0.0,
+-            "rank_ic": 0.0,
+-            "ir": 0.0,
+-            "icir": 0.0,
+-            "rank_icir": 0.0,
+-            "turnover": 0.0,
++            "ic": None,
++            "rank_ic": None,
++            "ir": None,
++            "icir": None,
++            "rank_icir": None,
++            "turnover": None,
+             "n_dates": 0,
+         },
++        "daily_metrics": [],
+         "timestamp": datetime.now(timezone.utc).isoformat(),
+     }
++
++
++def _daily_metrics_error(payload):
++    """Return a reason when a child result is unsafe to expose as success."""
++    if not isinstance(payload, dict):
++        return "FFO child returned a non-dictionary payload"
++    if not payload.get("success"):
++        return str(payload.get("error") or "FFO child reported failure")
++    rows = payload.get("daily_metrics")
++    if not isinstance(rows, list) or not rows:
++        return "FFO child returned no daily IC/RankIC observations"
++    dates = []
++    for row in rows:
++        if not isinstance(row, dict) or not row.get("date"):
++            return "FFO child returned a malformed daily observation"
++        try:
++            ic = float(row["ic"])
++            rank_ic = float(row["rank_ic"])
++        except (KeyError, TypeError, ValueError):
++            return "FFO child returned a daily observation without numeric IC/RankIC"
++        if not math.isfinite(ic) or not math.isfinite(rank_ic):
++            return "FFO child returned non-finite daily IC/RankIC"
++        dates.append(str(row["date"])[:10])
++    if len(dates) != len(set(dates)):
++        return "FFO child returned duplicate trading dates"
++    return None
+ 
+ 
+ def _extract_portfolio_metrics(analysis_df):
+@@ -271,6 +299,11 @@
+     if not missing:
+         # Full cache hit — compute summary from cached daily IC
+         daily_data = FACTOR_STORE.get_daily_ic(eh, market, cache_label, start, end)
++        cache_error = _daily_metrics_error({"success": True, "daily_metrics": daily_data})
++        if cache_error:
++            return False, _fail_result(
++                expr, market, start, end, f"Invalid cached evaluation: {cache_error}"
++            )
+         metrics = FactorStore.compute_summary(daily_data)
+         return True, {
+             "success": True,
+@@ -286,7 +319,7 @@
+ 
+     # Compute missing ranges (parallel if 2 sub-ranges: prefix + suffix)
+     # Scores are saved to disk by the subprocess (avoids Queue deadlock with large data)
+-    scores_dir = str(FACTOR_STORE.scores_dir)
++    scores_dir = str(FACTOR_STORE.scores_dir) if use_cache else None
+     all_new_daily = []
+     eval_failed = False
+     eval_error = ""
+@@ -307,7 +340,12 @@
+             for fut in as_completed(futures):
+                 res = fut.result()
+                 if res.ok and isinstance(res.payload, dict):
+-                    all_new_daily.extend(res.payload.get("daily_metrics", []))
++                    payload_error = _daily_metrics_error(res.payload)
++                    if payload_error:
++                        eval_failed = True
++                        eval_error = payload_error
++                    else:
++                        all_new_daily.extend(res.payload["daily_metrics"])
+                 else:
+                     eval_failed = True
+                     eval_error = f"{res.error_type}: {res.payload}"
+@@ -315,7 +353,12 @@
+         rs, re = missing[0]
+         res = _eval_range(rs, re)
+         if res.ok and isinstance(res.payload, dict):
+-            all_new_daily.extend(res.payload.get("daily_metrics", []))
++            payload_error = _daily_metrics_error(res.payload)
++            if payload_error:
++                eval_failed = True
++                eval_error = payload_error
++            else:
++                all_new_daily.extend(res.payload["daily_metrics"])
+         else:
+             eval_failed = True
+             eval_error = f"{res.error_type}: {res.payload}"
+@@ -323,10 +366,30 @@
+     if eval_failed:
+         return False, _fail_result(expr, market, start, end, eval_error)
+ 
++    if not all_new_daily:
++        return False, _fail_result(
++            expr, market, start, end, "Evaluation produced no daily IC/RankIC observations"
++        )
++
++    # A cache-disabled request is deliberately isolated from all persistent
++    # cache state: do not write it, and do not read old rows back into it.
++    if not use_cache:
++        metrics = FactorStore.compute_summary(all_new_daily)
++        return True, {
++            "success": True,
++            "expression": expr,
++            "market": market,
++            "start_date": start,
++            "end_date": end,
++            "metrics": metrics,
++            "daily_metrics": all_new_daily,
++            "cached": False,
++            "timestamp": datetime.now(timezone.utc).isoformat(),
++        }
++
+     # Store new daily IC (use cache_label to namespace forward-n results)
+-    if all_new_daily:
+-        FACTOR_STORE.register_expression(eh, expr)
+-        FACTOR_STORE.put_daily_ic(eh, market, cache_label, all_new_daily)
++    FACTOR_STORE.register_expression(eh, expr)
++    FACTOR_STORE.put_daily_ic(eh, market, cache_label, all_new_daily)
+ 
+     # Load full daily IC for the requested range and compute summary
+     daily_data = FACTOR_STORE.get_daily_ic(eh, market, cache_label, start, end)
+@@ -834,6 +897,7 @@
+         n_drop = int(data.get("n_drop", 5))
+         forward_n = max(1, int(data.get("forward_n", 1)))
+         fast = bool(data.get("fast", True))
++        use_cache = bool(data.get("use_cache", DEFAULTS.get("use_cache", True)))
+         n_jobs_backtest = int(data.get("n_jobs_backtest", 4))
+ 
+         # Assay engine: equal-weight z-score combine via Assay's REST API.
+@@ -879,7 +943,7 @@
+             "|".join(sorted_hashes).encode(), digest_size=16
+         ).hexdigest()
+ 
+-        scores_dir = str(FACTOR_STORE.scores_dir)
++        scores_dir = str(FACTOR_STORE.scores_dir) if use_cache else None
+ 
+         logger.info(
+             "Portfolio combine: %d factors (market=%s, %s→%s, fast=%s)",
+@@ -906,6 +970,26 @@
+             return jsonify({
+                 "success": False,
+                 "error": str(payload),
++                "timestamp": datetime.now(timezone.utc).isoformat(),
++            }), 200
++
++        if int(payload.get("n_valid_factors", 0)) != len(factors):
++            return jsonify({
++                "success": False,
++                "error": (
++                    f"Portfolio evaluation produced {payload.get('n_valid_factors', 0)}/"
++                    f"{len(factors)} valid factor series"
++                ),
++                "timestamp": datetime.now(timezone.utc).isoformat(),
++            }), 200
++        combined_error = _daily_metrics_error({
++            "success": True,
++            "daily_metrics": payload.get("combined_daily_metrics", []),
++        })
++        if combined_error:
++            return jsonify({
++                "success": False,
++                "error": f"Invalid combined portfolio evaluation: {combined_error}",
+                 "timestamp": datetime.now(timezone.utc).isoformat(),
+             }), 200
+ 
+--- a/ffo/utils/utils.py
++++ b/ffo/utils/utils.py
+@@ -530,6 +530,7 @@
+     """
+     import pickle as _pickle
+     import qlib
++    from qlib.data import D
+     from qlib.data.dataset.loader import QlibDataLoader
+ 
+     # Per-process init (safer across OS / forks)
+@@ -538,23 +539,34 @@
+     provider_uri = data_path or DEFAULT_PROVIDER_URI
+     qlib_region = region or DEFAULT_REGION
+ 
++    def _failure(message: str, error_type: str) -> Dict[str, Any]:
++        """Return an explicit failure; never disguise missing data as RankIC=0."""
++        return {
++            "success": False,
++            "expression": expr,
++            "market": market,
++            "start_date": start,
++            "end_date": end,
++            "metrics": {
++                "ic": None, "rank_ic": None, "ir": None,
++                "icir": None, "rank_icir": None, "turnover": None, "n_dates": 0,
++            },
++            "daily_metrics": [],
++            "error": str(message),
++            "error_type": str(error_type),
++            "timestamp": pd.Timestamp.utcnow().isoformat(),
++        }
++
+     logging.getLogger("qlib.Initialization").setLevel(logging.WARNING)
+-    qlib.init(provider_uri=provider_uri, region=qlib_region)
++    try:
++        qlib.init(provider_uri=provider_uri, region=qlib_region)
++    except Exception as exc:
++        return _failure(
++            f"Qlib initialization failed for provider {provider_uri!r}: {exc}",
++            "QLIB_INIT_ERROR",
++        )
+ 
+     # Build label spec(s) depending on forward_n
+-    _empty_result = {
+-        "success": True,
+-        "expression": expr,
+-        "market": market,
+-        "start_date": start,
+-        "end_date": end,
+-        "metrics": {
+-            "ic": 0.0, "rank_ic": 0.0, "ir": 0.0,
+-            "icir": 0.0, "rank_icir": 0.0, "turnover": 0.0, "n_dates": 0,
+-        },
+-        "daily_metrics": [],
+-        "timestamp": pd.Timestamp.utcnow().isoformat(),
+-    }
+ 
+     if forward_n <= 1:
+         # Single label — load directly via QlibDataLoader (avoids dataloader.py
+@@ -572,19 +584,25 @@
+             _logging.getLogger("_child_eval_expr").warning(
+                 "Exception during factor computation: %s", _exc,
+             )
+-            return _empty_result
++            return _failure(
++                f"Factor computation failed for provider {provider_uri!r}: {_exc}",
++                "FACTOR_COMPUTE_ERROR",
++            )
+ 
+         if out is None or out.empty or "feature" not in out or "label" not in out:
+             import logging as _logging
+             _logging.getLogger("_child_eval_expr").warning(
+                 "No data for %s in [%s, %s] — likely non-trading days", expr[:60], start, end,
+             )
+-            return _empty_result
++            return _failure(
++                f"No factor/label data for {expr!r} in [{start}, {end}]",
++                "EMPTY_DATA",
++            )
+ 
+         feat = out["feature"]
+         lbl = out["label"]
+         if "api_factor" not in feat.columns or "LABEL" not in lbl.columns:
+-            return _empty_result
++            return _failure("FFO response is missing api_factor or LABEL", "MISSING_COLUMN")
+ 
+         f_s: pd.Series = feat["api_factor"]
+         y_s: pd.Series = lbl["LABEL"]
+@@ -603,15 +621,21 @@
+         dl = QlibDataLoader(config=cfg)
+         try:
+             out = dl.load(instruments=market.lower(), start_time=start, end_time=end)
+-        except Exception:
+-            return _empty_result
++        except Exception as exc:
++            return _failure(
++                f"Multi-horizon factor computation failed for provider {provider_uri!r}: {exc}",
++                "FACTOR_COMPUTE_ERROR",
++            )
+ 
+         if out is None or out.empty or "feature" not in out or "label" not in out:
+-            return _empty_result
++            return _failure(
++                f"No multi-horizon factor/label data for {expr!r} in [{start}, {end}]",
++                "EMPTY_DATA",
++            )
+ 
+         feat = out["feature"]
+         if "api_factor" not in feat.columns:
+-            return _empty_result
++            return _failure("FFO response is missing api_factor", "MISSING_COLUMN")
+ 
+         f_s = feat["api_factor"]
+         lbl = out["label"]
+@@ -628,12 +652,31 @@
+                 rankic_ds.append(rankic_d_k)
+ 
+         if not ic_ds:
+-            return _empty_result
++            return _failure("No forward label produced a usable daily IC series", "EMPTY_DATA")
+ 
+         ic_d = pd.concat(ic_ds, axis=1).mean(axis=1)
+         rankic_d = pd.concat(rankic_ds, axis=1).mean(axis=1)
+ 
++    # A successful evaluation must contain finite IC and RankIC for every
++    # returned date.  Empty/all-NaN series are calculation failures, not zeros.
++    valid = ic_d.notna() & rankic_d.notna()
++    ic_d = ic_d.loc[valid]
++    rankic_d = rankic_d.loc[valid]
++    if ic_d.empty or rankic_d.empty:
++        return _failure("Factor produced no finite daily IC/RankIC values", "EMPTY_METRICS")
++
++    expected_dates = len(D.calendar(start_time=start, end_time=end, freq="day"))
++    actual_dates = len(ic_d.index.unique())
++    if actual_dates != expected_dates:
++        return _failure(
++            f"Incomplete daily IC coverage: expected {expected_dates} trading dates, "
++            f"got {actual_dates}",
++            "INCOMPLETE_DAILY_COVERAGE",
++        )
++
+     metrics = summarize_ic_rankic(ic_d, rankic_d)
++    if not np.isfinite(metrics["ic"]) or not np.isfinite(metrics["rank_ic"]):
++        return _failure("Factor produced non-finite aggregate IC/RankIC", "NONFINITE_METRICS")
+ 
+     # Compute rank-based turnover from factor scores
+     turnover_d = _daily_turnover(f_s)
