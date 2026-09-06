@@ -3,7 +3,7 @@
   "seeds": [
     {
       "seed": 42,
-      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
       "snapshot_round": 100,
       "factor_count": 342,
       "threshold": 0.035,
@@ -373,7 +373,7 @@
     },
     {
       "seed": 123,
-      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
       "snapshot_round": 100,
       "factor_count": 342,
       "threshold": 0.035,
@@ -743,7 +743,7 @@
     },
     {
       "seed": 456,
-      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
       "snapshot_round": 100,
       "factor_count": 342,
       "threshold": 0.035,
@@ -1118,9 +1118,9 @@
   "train_factor_annotations_displayed": false,
   "raw_test_curves_displayed": false,
   "outputs": {
-    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_three_seed_comparison.png",
-    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_three_seed_comparison.svg",
-    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_three_seed_comparison.pdf",
-    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_three_seed_comparison.json"
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.json"
   }
 }

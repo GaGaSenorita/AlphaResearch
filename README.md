@@ -6,6 +6,20 @@ August 2026 AlphaLDM experiments. The primary method is
 commits, ordered factor preservation, exact RNG-state capture, and staged
 Validation-selected Top-5 Test audits.
 
+## One checkout, two branches
+
+Use a single `AlphaResearch` directory linked to this GitHub repository:
+
+- `main`: research code, saved results and scientific figures.
+- `AlphaLDM_API`: the FastAPI backend and mock/online dashboard.
+
+Switch branches in that same directory with `git switch main` or
+`git switch AlphaLDM_API`; a second worktree is not required. Commit or stash
+local edits before switching. Stop any active workers and the API server first,
+since a running process must not have its source files replaced underneath it.
+Ignored runtime records, local environments and external market data remain on
+disk when switching branches. Follow the API branch's README to start its server.
+
 ## Scientific boundary
 
 - Train metrics may guide generation, GP fitting, and acquisition.

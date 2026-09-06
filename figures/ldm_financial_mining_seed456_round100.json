@@ -396,11 +396,11 @@
   "illustrative_projection": null,
   "threshold": 0.035,
   "test_usage": "retrospective audit only; not used for search or selection",
-  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
   "outputs": {
-    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed456_round100.png",
-    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed456_round100.svg",
-    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed456_round100.pdf",
-    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch-main/figures/ldm_financial_mining_seed456_round100.json"
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed456_round100.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed456_round100.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed456_round100.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed456_round100.json"
   }
 }
