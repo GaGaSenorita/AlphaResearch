@@ -122,7 +122,9 @@ function render(value) {
   if(item&&(item.status!==value.status||item.committed_round!==round)){Object.assign(item,{status:value.status,committed_round:round});renderSessions();}
 }
 function renderSessions() {
-  $('sessions').innerHTML=jobs.slice(0,8).map(j=>`<button class="session-item ${j.id===current?'active':''}" data-id="${j.id}"><span class="session-round">R${j.committed_round||0}</span><strong>${j.mode==='mock'?'Replay':'Online'} · Seed ${j.seed}</strong><small>${esc(statusNames[j.status]||j.status)} · ${new Date(j.created_at*1000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p class="muted">还没有运行记录</p>';
+  const priority=j=>j.alive?2:j.id===current?1:0;
+  const visible=[...jobs].sort((a,b)=>priority(b)-priority(a)||b.created_at-a.created_at).slice(0,8);
+  $('sessions').innerHTML=visible.map(j=>`<button class="session-item ${j.id===current?'active':''}" data-id="${j.id}"><span class="session-round">R${j.committed_round||0}</span><strong>${j.mode==='mock'?'Replay':'Online'} · Seed ${j.seed}</strong><small>${esc(statusNames[j.status]||j.status)} · ${new Date(j.created_at*1000).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p class="muted">还没有运行记录</p>';
   $('sessions').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>selectJob(button.dataset.id)));
 }
 async function sessions() {if(sessionBusy)return;sessionBusy=true;try{jobs=(await api('/api/runs')).runs;renderSessions();}catch{}finally{sessionBusy=false;}}
