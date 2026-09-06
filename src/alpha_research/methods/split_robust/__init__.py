@@ -1,4 +1,4 @@
-"""Train-only temporal robustness scoring."""
+"""Train-only worst-case calendar-quarter scoring."""
 
 from .reward import SplitScore, SplitSettings, split_score
 

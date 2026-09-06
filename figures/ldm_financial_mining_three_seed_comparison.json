@@ -1,0 +1,615 @@
+{
+  "title": "LDM financial factor discovery",
+  "seeds": [
+    {
+      "seed": 42,
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+      "snapshot_round": 100,
+      "factor_count": 342,
+      "threshold": 0.035,
+      "train": [
+        {
+          "round": 0,
+          "factor_round": 0,
+          "name": "LOW_REF",
+          "rank_ic": 0.04610131960175362
+        },
+        {
+          "round": 10,
+          "factor_round": 0,
+          "name": "LOW_REF",
+          "rank_ic": 0.04610131960175362
+        },
+        {
+          "round": 20,
+          "factor_round": 0,
+          "name": "LOW_REF",
+          "rank_ic": 0.04610131960175362
+        },
+        {
+          "round": 30,
+          "factor_round": 21,
+          "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+          "rank_ic": 0.04810581803892827
+        },
+        {
+          "round": 40,
+          "factor_round": 33,
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "rank_ic": 0.05946269447767831
+        },
+        {
+          "round": 50,
+          "factor_round": 33,
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "rank_ic": 0.05946269447767831
+        },
+        {
+          "round": 60,
+          "factor_round": 33,
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "rank_ic": 0.05946269447767831
+        },
+        {
+          "round": 70,
+          "factor_round": 33,
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "rank_ic": 0.05946269447767831
+        },
+        {
+          "round": 80,
+          "factor_round": 33,
+          "name": "CLOSE_LOCATION_REVERSAL",
+          "rank_ic": 0.05946269447767831
+        },
+        {
+          "round": 90,
+          "factor_round": 89,
+          "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+          "rank_ic": 0.06081372710466161
+        },
+        {
+          "round": 100,
+          "factor_round": 89,
+          "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+          "rank_ic": 0.06081372710466161
+        }
+      ],
+      "raw_test": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.035560278355646416
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.035560278355646416
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.035560278355646416
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.03761906847765277
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.03761906847765277
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.03957905577257804
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.03957905577257804
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.03957905577257804
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.042431898520551424
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.04243188883902932
+        }
+      ],
+      "test_best_so_far": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157,
+          "source_round": 0,
+          "raw_rank_ic": 0.022413163052378157,
+          "improved": true
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.035560278355646416,
+          "source_round": 10,
+          "raw_rank_ic": 0.035560278355646416,
+          "improved": true
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.035560278355646416,
+          "source_round": 10,
+          "raw_rank_ic": 0.035560278355646416,
+          "improved": false
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.035560278355646416,
+          "source_round": 10,
+          "raw_rank_ic": 0.035560278355646416,
+          "improved": false
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.03761906847765277,
+          "source_round": 40,
+          "raw_rank_ic": 0.03761906847765277,
+          "improved": true
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.03761906847765277,
+          "source_round": 40,
+          "raw_rank_ic": 0.03761906847765277,
+          "improved": false
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.03957905577257804,
+          "source_round": 60,
+          "raw_rank_ic": 0.03957905577257804,
+          "improved": true
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.03957905577257804,
+          "source_round": 60,
+          "raw_rank_ic": 0.03957905577257804,
+          "improved": false
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.03957905577257804,
+          "source_round": 60,
+          "raw_rank_ic": 0.03957905577257804,
+          "improved": false
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.042431898520551424,
+          "source_round": 90,
+          "raw_rank_ic": 0.042431898520551424,
+          "improved": true
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.042431898520551424,
+          "source_round": 90,
+          "raw_rank_ic": 0.04243188883902932,
+          "improved": false
+        }
+      ]
+    },
+    {
+      "seed": 123,
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123",
+      "snapshot_round": 100,
+      "factor_count": 342,
+      "threshold": 0.035,
+      "train": [
+        {
+          "round": 0,
+          "factor_round": 0,
+          "name": "LOW_REF",
+          "rank_ic": 0.04610131960175362
+        },
+        {
+          "round": 10,
+          "factor_round": 5,
+          "name": "LOW_RANGE_CLOSE",
+          "rank_ic": 0.048981088771794655
+        },
+        {
+          "round": 20,
+          "factor_round": 5,
+          "name": "LOW_RANGE_CLOSE",
+          "rank_ic": 0.048981088771794655
+        },
+        {
+          "round": 30,
+          "factor_round": 5,
+          "name": "LOW_RANGE_CLOSE",
+          "rank_ic": 0.048981088771794655
+        },
+        {
+          "round": 40,
+          "factor_round": 5,
+          "name": "LOW_RANGE_CLOSE",
+          "rank_ic": 0.048981088771794655
+        },
+        {
+          "round": 50,
+          "factor_round": 48,
+          "name": "UPPER_SHADOW_DOLLAR_VOLUME_RATIO",
+          "rank_ic": 0.05431506886089375
+        },
+        {
+          "round": 60,
+          "factor_round": 52,
+          "name": "UPSHADOW_CV_AMOUNT",
+          "rank_ic": 0.054639851006829825
+        },
+        {
+          "round": 70,
+          "factor_round": 69,
+          "name": "UP_SHADOW_BELOW_RECENT_Q80_STABLE_DOLLAR_VOL",
+          "rank_ic": 0.05579913407974614
+        },
+        {
+          "round": 80,
+          "factor_round": 74,
+          "name": "LOW_VOLUME_REVERSAL_UPPER_SHADOW",
+          "rank_ic": 0.058757659300808306
+        },
+        {
+          "round": 90,
+          "factor_round": 85,
+          "name": "UPPER_LOWER_SHADOW_VOL_CV",
+          "rank_ic": 0.05995301352635466
+        },
+        {
+          "round": 100,
+          "factor_round": 85,
+          "name": "UPPER_LOWER_SHADOW_VOL_CV",
+          "rank_ic": 0.05995301352635466
+        }
+      ],
+      "raw_test": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.04863753637732572
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.0325505403236064
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.0325505403236064
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.04528039862587724
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.04323021120841784
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.045032009714460385
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.045032009714460385
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.045032009714460385
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.044955992731750306
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.044955992731750306
+        }
+      ],
+      "test_best_so_far": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157,
+          "source_round": 0,
+          "raw_rank_ic": 0.022413163052378157,
+          "improved": true
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.04863753637732572,
+          "improved": true
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.0325505403236064,
+          "improved": false
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.0325505403236064,
+          "improved": false
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.04528039862587724,
+          "improved": false
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.04323021120841784,
+          "improved": false
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.045032009714460385,
+          "improved": false
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.045032009714460385,
+          "improved": false
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.045032009714460385,
+          "improved": false
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.044955992731750306,
+          "improved": false
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.04863753637732572,
+          "source_round": 10,
+          "raw_rank_ic": 0.044955992731750306,
+          "improved": false
+        }
+      ]
+    },
+    {
+      "seed": 456,
+      "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456",
+      "snapshot_round": 100,
+      "factor_count": 342,
+      "threshold": 0.035,
+      "train": [
+        {
+          "round": 0,
+          "factor_round": 0,
+          "name": "LOW_REF",
+          "rank_ic": 0.04610131960175362
+        },
+        {
+          "round": 10,
+          "factor_round": 7,
+          "name": "VOL_WEIGHTED_LOW_REVERSAL",
+          "rank_ic": 0.047908750058613996
+        },
+        {
+          "round": 20,
+          "factor_round": 12,
+          "name": "INTRADAY_RANGE_REVERSAL_VOLUME",
+          "rank_ic": 0.052797859732256876
+        },
+        {
+          "round": 30,
+          "factor_round": 23,
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "rank_ic": 0.05338641022185003
+        },
+        {
+          "round": 40,
+          "factor_round": 23,
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "rank_ic": 0.05338641022185003
+        },
+        {
+          "round": 50,
+          "factor_round": 23,
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "rank_ic": 0.05338641022185003
+        },
+        {
+          "round": 60,
+          "factor_round": 23,
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "rank_ic": 0.05338641022185003
+        },
+        {
+          "round": 70,
+          "factor_round": 23,
+          "name": "CLOSE_LOCATION_TURNOVER_VALUE",
+          "rank_ic": 0.05338641022185003
+        },
+        {
+          "round": 80,
+          "factor_round": 78,
+          "name": "HIGH_LOW_RANGE_AMPLIFIED_REVERSAL",
+          "rank_ic": 0.058111158297685664
+        },
+        {
+          "round": 90,
+          "factor_round": 90,
+          "name": "VOL_RANGE_CORR_PANIC_REVERSAL",
+          "rank_ic": 0.058651366820780766
+        },
+        {
+          "round": 100,
+          "factor_round": 90,
+          "name": "VOL_RANGE_CORR_PANIC_REVERSAL",
+          "rank_ic": 0.058651366820780766
+        }
+      ],
+      "raw_test": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.034457881528119065
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.03831263947494063
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.038366343757972446
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.038366343757972446
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.038366343757972446
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.038366343757972446
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.038366343757972446
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.03361301079814106
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.03361301079814106
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.03361301079814106
+        }
+      ],
+      "test_best_so_far": [
+        {
+          "round": 0,
+          "rank_ic": 0.022413163052378157,
+          "source_round": 0,
+          "raw_rank_ic": 0.022413163052378157,
+          "improved": true
+        },
+        {
+          "round": 10,
+          "rank_ic": 0.034457881528119065,
+          "source_round": 10,
+          "raw_rank_ic": 0.034457881528119065,
+          "improved": true
+        },
+        {
+          "round": 20,
+          "rank_ic": 0.03831263947494063,
+          "source_round": 20,
+          "raw_rank_ic": 0.03831263947494063,
+          "improved": true
+        },
+        {
+          "round": 30,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.038366343757972446,
+          "improved": true
+        },
+        {
+          "round": 40,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.038366343757972446,
+          "improved": false
+        },
+        {
+          "round": 50,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.038366343757972446,
+          "improved": false
+        },
+        {
+          "round": 60,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.038366343757972446,
+          "improved": false
+        },
+        {
+          "round": 70,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.038366343757972446,
+          "improved": false
+        },
+        {
+          "round": 80,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.03361301079814106,
+          "improved": false
+        },
+        {
+          "round": 90,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.03361301079814106,
+          "improved": false
+        },
+        {
+          "round": 100,
+          "rank_ic": 0.038366343757972446,
+          "source_round": 30,
+          "raw_rank_ic": 0.03361301079814106,
+          "improved": false
+        }
+      ]
+    }
+  ],
+  "train_curve": "best-so-far from committed real evaluations at R0/R10/.../R100",
+  "test_curve": "retrospective best-so-far of real Validation-selected Top-5 Test audits; not used for search or selection",
+  "train_factor_annotations_displayed": false,
+  "raw_test_curves_displayed": false,
+  "outputs": {
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.json"
+  }
+}

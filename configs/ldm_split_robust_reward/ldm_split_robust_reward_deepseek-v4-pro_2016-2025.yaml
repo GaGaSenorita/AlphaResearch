@@ -3,7 +3,9 @@ method: ldm_split_robust_reward
 environment: static
 mode: real
 description: >
-  AlphaLDM with a train-only cross-year stability reward.
+  Stage 2 Method 1: AlphaLDM with a Train-only worst-case calendar-quarter
+  objective. Each factor is evaluated once on 2016-2020; the GP target is the
+  minimum of its 20 quarterly mean signed RankIC values.
 args:
   alphabench-root: "{repo_root}/external/AlphaBench"
   qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
@@ -24,16 +26,10 @@ args:
   test-start: 2022-01-01
   test-end: 2025-12-26
   objective: rank_ic
-  search-objective: split_robust
+  search-objective: worst_rankic
   factor-budget: 30
   max-correlation: 0.8
   seed-group: all
-  split-embargo-days: 60
-  split-lambda: 0.5
-  split-aggregator: mean_minus_lambda_std
-  split-min-segment-days: 120
-  split-min-segments: 2
-
   search-rounds: 38
   candidates-per-round: 8
   generator-parallel: 8

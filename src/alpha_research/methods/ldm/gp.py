@@ -192,6 +192,36 @@ class LdmSurrogate:
             std = pred.variance.detach().clamp_min(1e-12).sqrt().numpy()
         return mean * self._score_scale + self._score_mean, std * self._score_scale
 
+    def predict_joint(self, features: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Posterior mean and full candidate covariance in score units.
+
+        Marginal ``predict`` is enough for UCB/EI and pointwise EHVI.  True
+        batch qEHVI additionally needs the covariance *between* candidates in
+        one proposal slate; otherwise three near-identical candidates are
+        incorrectly sampled as three independent opportunities.  The returned
+        covariance includes the same Gaussian likelihood used by ``predict``
+        and is mapped back from the GP's internal target standardisation.
+        """
+
+        features = np.atleast_2d(np.asarray(features, dtype=float))
+        count = features.shape[0]
+        if self._model is None:
+            mean = np.full(count, self._score_mean, dtype=float)
+            variance = (self.scale * self._score_scale) ** 2
+            return mean, np.eye(count, dtype=float) * variance
+
+        test_x = self._build_input(features)
+        with torch.no_grad(), gpytorch.settings.lazily_evaluate_kernels(False):
+            pred = self._likelihood(self._model(test_x))
+            mean = pred.mean.detach().numpy()
+            covariance = pred.covariance_matrix.detach().numpy()
+
+        covariance = np.asarray(covariance, dtype=float) * (self._score_scale**2)
+        # Numerical round-off can make a theoretically symmetric covariance
+        # differ at the 1e-15 level.  Symmetrise before NumPy samples from it.
+        covariance = 0.5 * (covariance + covariance.T)
+        return mean * self._score_scale + self._score_mean, covariance
+
 
 def _median_lengthscale(standardized: np.ndarray, floor: float = 1e-2) -> float:
     """Median pairwise distance of the standardised history.

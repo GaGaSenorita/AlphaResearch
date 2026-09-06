@@ -9,6 +9,7 @@ to the two-objective path AlphaResearch uses.
 
 from __future__ import annotations
 
+from itertools import combinations
 from typing import Sequence
 
 import numpy as np
@@ -59,6 +60,30 @@ def pareto_front(
             for other_index, other in enumerate(materialized)
         )
     ]
+
+
+def pareto_mask(
+    points: Sequence[Sequence[float]],
+    maximize: Sequence[bool],
+) -> np.ndarray:
+    """Return one Boolean per point indicating current non-dominance."""
+
+    materialized = [tuple(float(value) for value in point) for point in points]
+    for point in materialized:
+        if len(point) != len(maximize):
+            raise ValueError(
+                f"point length {len(point)} does not match maximize length {len(maximize)}"
+            )
+    return np.asarray(
+        [
+            not any(
+                other_index != index and dominates(other, point, maximize)
+                for other_index, other in enumerate(materialized)
+            )
+            for index, point in enumerate(materialized)
+        ],
+        dtype=bool,
+    )
 
 
 def _hypervolume_2d_minimized(
@@ -189,3 +214,94 @@ def expected_hypervolume_improvement_2d(
             )
         values[candidate_index] = float(improvements.mean())
     return np.clip(values, 0.0, None)
+
+
+def q_expected_hypervolume_improvement_2d(
+    *,
+    means: Sequence[np.ndarray],
+    covariance_matrices: Sequence[np.ndarray],
+    pareto_points: Sequence[Sequence[float]],
+    reference: Sequence[float],
+    maximize: Sequence[bool],
+    batch_size: int,
+    n_samples: int,
+    rng: np.random.Generator,
+) -> tuple[list[tuple[int, ...]], np.ndarray]:
+    """Estimate discrete two-objective qEHVI for every candidate batch.
+
+    Each objective is modelled by an independent GP, but samples from a single
+    GP retain the full posterior covariance across candidates.  For an eight
+    candidate slate and ``batch_size=3`` this returns all 56 batch values; the
+    caller can therefore choose the exact best batch in the discrete slate.
+    """
+
+    if len(reference) != 2 or len(maximize) != 2:
+        raise ValueError("qEHVI requires exactly two objectives")
+    if len(means) != 2 or len(covariance_matrices) != 2:
+        raise ValueError("means and covariance_matrices must each contain two arrays")
+    if n_samples < 1:
+        raise ValueError(f"n_samples must be >= 1, got {n_samples}")
+
+    mean_arrays = [np.asarray(values, dtype=float).ravel() for values in means]
+    if mean_arrays[0].shape != mean_arrays[1].shape:
+        raise ValueError("posterior mean shapes do not match")
+    candidate_count = len(mean_arrays[0])
+    if batch_size < 1 or batch_size > candidate_count:
+        raise ValueError(
+            f"batch_size must be in [1, {candidate_count}], got {batch_size}"
+        )
+
+    covariance_arrays: list[np.ndarray] = []
+    for covariance in covariance_matrices:
+        matrix = np.asarray(covariance, dtype=float)
+        if matrix.shape != (candidate_count, candidate_count):
+            raise ValueError(
+                "posterior covariance shape does not match candidate count: "
+                f"{matrix.shape} vs {(candidate_count, candidate_count)}"
+            )
+        if not np.all(np.isfinite(matrix)):
+            raise ValueError("posterior covariance contains non-finite values")
+        matrix = 0.5 * (matrix + matrix.T)
+        minimum_eigenvalue = float(np.linalg.eigvalsh(matrix).min())
+        if minimum_eigenvalue < 0.0:
+            matrix = matrix + np.eye(candidate_count) * (
+                -minimum_eigenvalue + 1e-12
+            )
+        covariance_arrays.append(matrix)
+
+    batches = list(combinations(range(candidate_count), int(batch_size)))
+    if not batches:
+        return [], np.zeros((0,), dtype=float)
+
+    # Independent objectives, joint candidates within each objective.
+    objective_samples = [
+        rng.multivariate_normal(mean, covariance, size=n_samples, check_valid="raise")
+        for mean, covariance in zip(mean_arrays, covariance_arrays)
+    ]
+    current_volume = hypervolume_2d(
+        pareto_points,
+        reference,
+        maximize=maximize,
+    )
+    values = np.zeros(len(batches), dtype=float)
+    for batch_index, batch in enumerate(batches):
+        improvements = np.zeros(n_samples, dtype=float)
+        for sample_index in range(n_samples):
+            sampled_points = [
+                tuple(
+                    float(objective_samples[objective][sample_index, candidate])
+                    for objective in range(2)
+                )
+                for candidate in batch
+            ]
+            improvements[sample_index] = max(
+                0.0,
+                hypervolume_2d(
+                    [*pareto_points, *sampled_points],
+                    reference,
+                    maximize=maximize,
+                )
+                - current_volume,
+            )
+        values[batch_index] = float(improvements.mean())
+    return batches, np.clip(values, 0.0, None)

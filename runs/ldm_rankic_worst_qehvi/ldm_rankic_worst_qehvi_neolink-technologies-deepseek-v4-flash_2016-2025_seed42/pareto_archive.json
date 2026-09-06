@@ -1,0 +1,79 @@
+{
+  "directions": [
+    "maximize",
+    "maximize"
+  ],
+  "factors": [
+    {
+      "canonical": "Mul(Mul(Add(1,Div(Count(Less($open,Ref($close,1)),5),5)),Mul(Add(1,Div(Count(Greater($volume,Mean($volume,20)),5),5)),Div(Mul(Mul(Add(1,Div(Count(Less($close,Ref($close,1)),10),10)),Div(Ref($low,1),$close)),Sub(1,Slope(Log($close),10))),Add(1,Mul(0.5,Mean(Log(Div($high,$low)),20)))))),Sub(1,Mean(Log(Div($close,Ref($close,1))),5)))",
+      "expression": "Ref($low, 1) / $close * (1 + Count(Less($close, Ref($close, 1)), 10) / 10) * (1 - Slope(Log($close), 10)) / (1 + Mean(Log($high / $low), 20) * 0.5) * (1 + Count(Greater($volume, Mean($volume, 20)), 5) / 5) * (1 + Count(Less($open, Ref($close, 1)), 5) / 5) * (1 - Mean(Log($close / Ref($close, 1)), 5))",
+      "name": "LOW_CLOSE_REVERSAL",
+      "pareto_nondominated": true,
+      "quarterly_rankic": {
+        "2016Q1": 0.05209998870742646,
+        "2016Q2": 0.11030816927583517,
+        "2016Q3": 0.1481409889172075,
+        "2016Q4": 0.0994361413875706,
+        "2017Q1": 0.08660560146339935,
+        "2017Q2": 0.024992646296319677,
+        "2017Q3": 0.08412288083049359,
+        "2017Q4": 0.036773764775358625,
+        "2018Q1": 0.052333776895086365,
+        "2018Q2": 0.027644621310671372,
+        "2018Q3": 0.05970684058659316,
+        "2018Q4": 0.00020567569947695455,
+        "2019Q1": 0.021156214899189753,
+        "2019Q2": 0.0884529859965202,
+        "2019Q3": 0.03127969952554545,
+        "2019Q4": 0.04603052351722872,
+        "2020Q1": 0.021816677039663387,
+        "2020Q2": 0.03488249239704894,
+        "2020Q3": 0.0532712292968599,
+        "2020Q4": 0.017956480517944025
+      },
+      "round_id": 37,
+      "train_rankic": 0.05540265924680873,
+      "worst_quarter": "2018Q4",
+      "worst_rankic": 0.00020567569947695455
+    },
+    {
+      "canonical": "Mul(Add(1,Div(Count(Greater($close,$open),5),5)),Mul(Add(1,Div(Count(Less($open,Ref($close,1)),5),5)),Mul(Add(1,Div(Count(Greater($volume,Mean($volume,20)),5),5)),Div(Mul(Mul(Add(1,Div(Count(Less($close,Ref($close,1)),10),10)),Div(WMA($low,10),$close)),Sub(1,Slope(Log($close),10))),Add(1,Mul(0.5,Mean(Log(Div($high,$low)),20)))))))",
+      "expression": "WMA($low, 10) / $close * (1 + Count(Less($close, Ref($close, 1)), 10) / 10) * (1 - Slope(Log($close), 10)) / (1 + Mean(Log($high / $low), 20) * 0.5) * (1 + Count(Greater($volume, Mean($volume, 20)), 5) / 5) * (1 + Count(Less($open, Ref($close, 1)), 5) / 5) * (1 + Count(Greater($close, $open), 5) / 5)",
+      "name": "WMA_LOW_REVERSAL",
+      "pareto_nondominated": true,
+      "quarterly_rankic": {
+        "2016Q1": 0.052794722325884745,
+        "2016Q2": 0.099159133481816,
+        "2016Q3": 0.1323576084522802,
+        "2016Q4": 0.08873467152025219,
+        "2017Q1": 0.0672759348995351,
+        "2017Q2": 0.03373153415716094,
+        "2017Q3": 0.078654363775564,
+        "2017Q4": 0.014639978330208732,
+        "2018Q1": 0.05028836929341258,
+        "2018Q2": 0.03039066954314181,
+        "2018Q3": 0.05655864284880463,
+        "2018Q4": 0.010416172108836146,
+        "2019Q1": 0.02752445313106362,
+        "2019Q2": 0.0744945430574022,
+        "2019Q3": 0.033379762326865514,
+        "2019Q4": 0.04208943628834116,
+        "2020Q1": 0.022673457828710906,
+        "2020Q2": 0.034354654275941456,
+        "2020Q3": 0.061017303696414095,
+        "2020Q4": 0.015386787550596158
+      },
+      "round_id": 37,
+      "train_rankic": 0.05184427375278252,
+      "worst_quarter": "2018Q4",
+      "worst_rankic": 0.010416172108836146
+    }
+  ],
+  "objectives": [
+    "train_rankic",
+    "worst_rankic"
+  ],
+  "observation_count": 156,
+  "pareto_size": 2,
+  "schema_version": "alphaldm.rankic_worst_qehvi.v1"
+}

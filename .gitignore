@@ -14,6 +14,8 @@ wheels/
 worktrees/
 results/
 queue/
+/runtime/
+/data/
 
 # Local configuration and credentials
 .env
@@ -46,6 +48,17 @@ runs/ldm_continuous_discovery/*
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed123/**
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/
 !runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed456/**
+
+# Preserve the existing Stage II experiment records alongside the code.
+# Incomplete runs are retained as recorded; these exceptions do not imply completion.
+!runs/ldm_split_robust_reward/
+runs/ldm_split_robust_reward/*
+!runs/ldm_split_robust_reward/ldm_split_robust_reward_neolink-technologies-deepseek-v4-flash_2016-2025_seed42/
+!runs/ldm_split_robust_reward/ldm_split_robust_reward_neolink-technologies-deepseek-v4-flash_2016-2025_seed123/
+!runs/ldm_split_robust_reward/ldm_split_robust_reward_neolink-technologies-deepseek-v4-flash_2016-2025_seed456/
+!runs/ldm_rankic_worst_qehvi/
+runs/ldm_rankic_worst_qehvi/*
+!runs/ldm_rankic_worst_qehvi/ldm_rankic_worst_qehvi_neolink-technologies-deepseek-v4-flash_2016-2025_seed42/
 
 .vscode
 .DS_Store

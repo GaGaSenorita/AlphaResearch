@@ -56,12 +56,15 @@ def resolved_runner_args(
     seed: int,
     target_round: int,
     checkpoints: list[int],
+    eval_parallel: int | None = None,
 ) -> argparse.Namespace:
     config = load_config(config_path)
     raw_args = dict(config.get("args") or {})
     raw_args["ldm-random-seed"] = seed
     raw_args["search-rounds"] = target_round
     raw_args["continuous-checkpoint-round"] = checkpoints
+    if eval_parallel is not None:
+        raw_args["eval-parallel"] = max(1, int(eval_parallel))
     context = build_expansion_context(config, raw_args, config_path)
     argv = [
         "--environment", str(config["environment"]),
@@ -94,12 +97,14 @@ def backfill_one(
     checkpoints: list[int],
     dry_run: bool,
     render: bool,
+    eval_parallel: int | None = None,
 ) -> dict[str, Any]:
     args = resolved_runner_args(
         config_path,
         seed=seed,
         target_round=target_round,
         checkpoints=checkpoints,
+        eval_parallel=eval_parallel,
     )
     run_dir = standard_output_dir(
         REPO_ROOT,
@@ -122,6 +127,7 @@ def backfill_one(
             "completed_round": completed_round,
             "existing_checkpoints": before,
             "missing_checkpoints": missing,
+            "eval_parallel": args.eval_parallel,
             "dry_run": True,
         }
 
@@ -172,6 +178,7 @@ def backfill_one(
         "llm_called": False,
         "search_state_changed": False,
         "rendered": bool(plot_metadata),
+        "eval_parallel": args.eval_parallel,
     }
 
 
@@ -181,6 +188,10 @@ def main() -> int:
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 123, 456])
     parser.add_argument("--target-round", type=int, default=100)
     parser.add_argument("--checkpoint-step", type=int, default=10)
+    parser.add_argument(
+        "--eval-parallel", type=int,
+        help="override evaluator request parallelism for reporting-only backfill",
+    )
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--no-render", action="store_true")
     options = parser.parse_args()
@@ -195,6 +206,7 @@ def main() -> int:
             checkpoints=checkpoints,
             dry_run=options.dry_run,
             render=not options.no_render,
+            eval_parallel=options.eval_parallel,
         )
         for seed in options.seeds
     ]

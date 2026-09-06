@@ -24,6 +24,7 @@ from alpha_research.naming import (
     LDM_PROMPT_HARNESS,
     LDM_RANKIC_RANKICIR_EHVI,
     LDM_RANKIC_TURNOVER_EHVI,
+    LDM_RANKIC_WORST_QEHVI,
     LDM_SINGLE_FACTOR,
     LDM_SPLIT_ROBUST_REWARD,
     standard_output_dir,
@@ -51,8 +52,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "with an empty D_0: no Alpha158 warm-up, everything else identical. "
             "ldm_single_factor is ldm_standard with the pool readout removed: the same "
             "search, delivering the single best factor on validation. "
-            "ldm_split_robust_reward is ldm_standard with the reward replaced by cross-year "
-            "stability of the same daily RankIC series. "
+            "ldm_split_robust_reward is ldm_standard with the reward replaced by the "
+            "worst of 20 calendar-quarter mean signed RankIC values on Train. "
+            "ldm_rankic_worst_qehvi uses independent GPs and true batch qEHVI to "
+            "maximise Train RankIC and worst-quarter RankIC in the Pareto sense. "
             "ldm_rankic_rankicir_ehvi fits independent RankIC and RankICIR GPs and "
             "acquires candidates by two-objective expected hypervolume improvement. "
             "ldm_rankic_turnover_ehvi applies the same EHVI search to maximise RankIC "
@@ -191,7 +194,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--search-objective",
         choices=[
-            "ic", "rank_ic", "icir", "rank_icir", "late_rank_ic", "split_robust",
+            "ic", "rank_ic", "icir", "rank_icir", "late_rank_ic", "worst_rankic",
         ],
         default=None,
         help=(
@@ -204,44 +207,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=float,
         default=0.25,
         help="Closing share of the training window used by late_rank_ic.",
-    )
-    parser.add_argument(
-        "--split-embargo-days",
-        type=int,
-        default=60,
-        help=(
-            "Trading days dropped from the head of every calendar year before "
-            "its RankIC is measured, so that a factor's long rolling window "
-            "cannot make one year's score depend on the previous year's data. "
-            "99.6%% of archive expressions use windows of 60 days or less."
-        ),
-    )
-    parser.add_argument(
-        "--split-lambda",
-        type=float,
-        default=0.5,
-        help="Weight on the dispersion penalty in mean_minus_lambda_std.",
-    )
-    parser.add_argument(
-        "--split-aggregator",
-        choices=["mean_minus_lambda_std", "worst", "sign_weighted"],
-        default="mean_minus_lambda_std",
-        help=(
-            "How the per-year scores become one reward. 'worst' is Group-DRO's "
-            "prescription; 'sign_weighted' has no flat-at-zero optimum."
-        ),
-    )
-    parser.add_argument(
-        "--split-min-segment-days",
-        type=int,
-        default=120,
-        help="Days a year must keep after the embargo to be scored at all.",
-    )
-    parser.add_argument(
-        "--split-min-segments",
-        type=int,
-        default=2,
-        help="Scored years required before a candidate gets a finite reward.",
     )
     parser.add_argument("--candidates-per-round", type=int, default=8)
     parser.add_argument("--generator-parallel", type=int, default=8)
@@ -279,11 +244,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--diversity-feedback-clusters", type=int, default=6)
     parser.add_argument(
         "--acquisition",
-        choices=["ucb", "ei", "random", "ehvi"],
+        choices=["ucb", "ei", "random", "ehvi", "qehvi"],
         default="ucb",
         help=(
             "random drops the surrogate from the decision; the ablation arm. "
-            "ehvi is reserved for the two ldm_rankic_*_ehvi methods."
+            "ehvi is reserved for the two ldm_rankic_*_ehvi methods; qehvi is "
+            "reserved for ldm_rankic_worst_qehvi."
         ),
     )
     parser.add_argument("--acquisition-beta", type=float, default=2.0)
@@ -311,9 +277,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--ehvi-n-samples",
+        "--qehvi-n-samples",
+        dest="ehvi_n_samples",
         type=int,
         default=128,
-        help="Independent posterior draws per candidate for Monte Carlo EHVI.",
+        help="Posterior draws for Monte Carlo EHVI/qEHVI.",
+    )
+    parser.add_argument(
+        "--qehvi-reference-margin",
+        type=float,
+        default=0.1,
+        help=(
+            "Positive margin below each normalized initial-observation minimum "
+            "used to freeze the RankIC-Worst qEHVI reference point."
+        ),
     )
     parser.add_argument("--softmax-temperature", type=float, default=1.0)
     parser.add_argument(
@@ -594,6 +571,12 @@ def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output
         from alpha_research.methods.ldm_split_robust_reward import SplitRobustLDM
 
         method_class = SplitRobustLDM
+    elif args.method == LDM_RANKIC_WORST_QEHVI:
+        from alpha_research.methods.ldm_rankic_worst_qehvi import (
+            RankICWorstQEHVIAlphaLDM,
+        )
+
+        method_class = RankICWorstQEHVIAlphaLDM
     elif args.method == LDM_RANKIC_RANKICIR_EHVI:
         from alpha_research.methods.ldm_rankic_rankicir_ehvi import (
             RankICRankICIREHVILDM,
@@ -638,7 +621,15 @@ def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output
         random_seed=args.ldm_random_seed,
         **(
             {"split_settings": split_settings(args)}
-            if args.method == LDM_SPLIT_ROBUST_REWARD
+            if args.method in {LDM_SPLIT_ROBUST_REWARD, LDM_RANKIC_WORST_QEHVI}
+            else {}
+        ),
+        **(
+            {
+                "qehvi_reference_margin": args.qehvi_reference_margin,
+                "qehvi_n_samples": args.ehvi_n_samples,
+            }
+            if args.method == LDM_RANKIC_WORST_QEHVI
             else {}
         ),
         **(
@@ -687,13 +678,8 @@ def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output
 def split_settings(args: argparse.Namespace):
     from alpha_research.methods.ldm_split_robust_reward import SplitSettings
 
-    return SplitSettings(
-        embargo_days=args.split_embargo_days,
-        penalty_lambda=args.split_lambda,
-        aggregator=args.split_aggregator,
-        min_segment_days=args.split_min_segment_days,
-        min_segments=args.split_min_segments,
-    )
+    del args
+    return SplitSettings()
 
 
 def build_components(args: argparse.Namespace, output_dir: Path):
@@ -818,6 +804,19 @@ def public_metadata(args: argparse.Namespace) -> dict[str, Any]:
         }
         if args.method == LDM_SPLIT_ROBUST_REWARD:
             ldm["split_reward"] = split_settings(args).to_dict()
+        if args.method == LDM_RANKIC_WORST_QEHVI:
+            ldm["search_objectives"] = ["train_rankic", "worst_rankic"]
+            ldm["split_reward"] = split_settings(args).to_dict()
+            ldm["multi_objective_bo"] = {
+                "surrogate": "two_independent_gaussian_processes",
+                "acquisition": "monte_carlo_qehvi",
+                "batch_selection": "exact_enumeration_of_finite_proposal_slate",
+                "objective_directions": ["maximize", "maximize"],
+                "normalization": "z_score_frozen_from_initial_42_train_observations",
+                "reference_point": "componentwise_normalized_initial_min_minus_margin",
+                "reference_margin": args.qehvi_reference_margin,
+                "posterior_samples_per_batch": args.ehvi_n_samples,
+            }
         if args.method == LDM_RANKIC_RANKICIR_EHVI:
             ldm["search_objectives"] = ["rank_ic", "rank_icir"]
             ldm["multi_objective_bo"] = {

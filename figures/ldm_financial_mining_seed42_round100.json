@@ -1,0 +1,226 @@
+{
+  "snapshot_round": 100,
+  "seed": 42,
+  "factor_count": 342,
+  "train_milestones": [
+    {
+      "round": 0,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 10,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 20,
+      "factor_round": 0,
+      "name": "LOW_REF",
+      "rank_ic": 0.04610131960175362
+    },
+    {
+      "round": 30,
+      "factor_round": 21,
+      "name": "VOL_SHOCK_LOW_CLOSE_REVERSAL",
+      "rank_ic": 0.04810581803892827
+    },
+    {
+      "round": 40,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 50,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 60,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 70,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 80,
+      "factor_round": 33,
+      "name": "CLOSE_LOCATION_REVERSAL",
+      "rank_ic": 0.05946269447767831
+    },
+    {
+      "round": 90,
+      "factor_round": 89,
+      "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+      "rank_ic": 0.06081372710466161
+    },
+    {
+      "round": 100,
+      "factor_round": 89,
+      "name": "CLOSE_LOCATION_AMOUNT_RATIO_REVERSAL",
+      "rank_ic": 0.06081372710466161
+    }
+  ],
+  "measured_top5_test_checkpoints": [
+    {
+      "round": 0,
+      "rank_ic": 0.022413163052378157
+    },
+    {
+      "round": 10,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 20,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 30,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 40,
+      "rank_ic": 0.03761906847765277
+    },
+    {
+      "round": 50,
+      "rank_ic": 0.03761906847765277
+    },
+    {
+      "round": 60,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 70,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 80,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 90,
+      "rank_ic": 0.042431898520551424
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.04243188883902932
+    }
+  ],
+  "available_checkpoint_rounds": [
+    0,
+    10,
+    20,
+    30,
+    38,
+    40,
+    50,
+    60,
+    70,
+    75,
+    80,
+    90,
+    100
+  ],
+  "displayed_checkpoint_schedule": "R0/R10/.../R100",
+  "retrospective_test_best_so_far": [
+    {
+      "round": 0,
+      "rank_ic": 0.022413163052378157,
+      "source_round": 0,
+      "raw_rank_ic": 0.022413163052378157,
+      "improved": true
+    },
+    {
+      "round": 10,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": true
+    },
+    {
+      "round": 20,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
+      "round": 30,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
+      "round": 40,
+      "rank_ic": 0.03761906847765277,
+      "source_round": 40,
+      "raw_rank_ic": 0.03761906847765277,
+      "improved": true
+    },
+    {
+      "round": 50,
+      "rank_ic": 0.03761906847765277,
+      "source_round": 40,
+      "raw_rank_ic": 0.03761906847765277,
+      "improved": false
+    },
+    {
+      "round": 60,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": true
+    },
+    {
+      "round": 70,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
+      "round": 80,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
+      "round": 90,
+      "rank_ic": 0.042431898520551424,
+      "source_round": 90,
+      "raw_rank_ic": 0.042431898520551424,
+      "improved": true
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.042431898520551424,
+      "source_round": 90,
+      "raw_rank_ic": 0.04243188883902932,
+      "improved": false
+    }
+  ],
+  "single_factor_points_displayed": false,
+  "staged_single_factor_test_results": [],
+  "illustrative_projection": null,
+  "threshold": 0.035,
+  "test_usage": "retrospective audit only; not used for search or selection",
+  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+  "outputs": {
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_seed42_round100.json"
+  }
+}

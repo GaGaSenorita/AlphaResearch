@@ -1,20 +1,79 @@
-"""The LDM search under a cross-year stability reward."""
+"""AlphaLDM with the Stage-2 Method-1 worst-quarter Train reward."""
 
 from __future__ import annotations
 
 import csv
+import json
 import math
 from typing import Any
 
+import numpy as np
+
+from alpha_research.methods.ldm.history import History
 from alpha_research.methods.ldm.method import AlphaLDM
 from alpha_research.methods.split_robust.reward import SplitScore, SplitSettings, split_score
+from alpha_research.types import EvaluationResult
 
 
-SPLIT_OBJECTIVE = "split_robust"
+SPLIT_OBJECTIVE = "worst_rankic"
+QUARTER_VALUE_PREFIX = "rankic_"
+QUARTER_DAYS_PREFIX = "days_"
 FIXED_COLUMNS = (
-    "expression", "score", "rank_ic", "rank_icir", "mean", "std", "worst",
-    "sign_consistency", "noise_std", "dispersion_ratio", "usable_days", "rejected",
+    "expression",
+    "score",
+    "train_rankic",
+    "worst_rankic",
+    "worst_quarter",
+    "usable_days",
+    "rejected",
 )
+
+
+class QuarterlyWorstHistory(History):
+    """LDM history with the full quarter-level provenance of every target."""
+
+    def __init__(self, dim: int, schema_version: str, quarters: tuple[str, ...]) -> None:
+        super().__init__(dim=dim, schema_version=schema_version)
+        self.quarters = tuple(quarters)
+        extra = ["train_rankic", "worst_rankic", "worst_quarter", "quarterly_rankic"]
+        extra += [f"{QUARTER_VALUE_PREFIX}{quarter}" for quarter in self.quarters]
+        self._df = self._df.reindex(columns=list(self._df.columns) + extra)
+
+    def add_outcome(
+        self,
+        feature: np.ndarray,
+        score: float,
+        canonical: str,
+        expression: str,
+        round_id: int,
+        outcome: SplitScore,
+    ) -> None:
+        row: dict[str, Any] = {
+            column: float(value)
+            for column, value in zip(
+                self.feature_cols, np.asarray(feature, dtype=float)
+            )
+        }
+        quarterly = dict(zip(outcome.quarters, outcome.quarterly_rankic))
+        row.update(
+            {
+                "score": float(score),
+                "canonical": canonical,
+                "expression": expression,
+                "round_id": int(round_id),
+                "train_rankic": outcome.train_rankic,
+                "worst_rankic": outcome.worst_rankic,
+                "worst_quarter": outcome.worst_quarter,
+                "quarterly_rankic": json.dumps(quarterly, separators=(",", ":")),
+            }
+        )
+        row.update(
+            {
+                f"{QUARTER_VALUE_PREFIX}{quarter}": quarterly.get(quarter)
+                for quarter in self.quarters
+            }
+        )
+        self._df.loc[len(self._df)] = row
 
 
 class SplitRobustLDM(AlphaLDM):
@@ -32,27 +91,44 @@ class SplitRobustLDM(AlphaLDM):
         self._split_records: list[dict[str, Any]] = []
 
     def _score(self, result: Any) -> float:
+        """Compute the scalar target without triggering another evaluation."""
+        return split_score(result, self.split_settings).score
+
+    def _new_history(self, *, dim: int, schema_version: str) -> History:
+        return QuarterlyWorstHistory(dim, schema_version, self.split_settings.quarters)
+
+    def _record_observation(
+        self,
+        history: History,
+        *,
+        feature: np.ndarray,
+        score: float,
+        result: EvaluationResult,
+        canonical: str,
+        expression: str,
+        round_id: int,
+    ) -> None:
         outcome = split_score(result, self.split_settings)
-        metrics = getattr(result, "metrics", None)
+        if not math.isfinite(outcome.score):
+            raise ValueError(outcome.rejected or "non-finite worst-quarter RankIC")
+        if not isinstance(history, QuarterlyWorstHistory):
+            raise TypeError("worst-quarter method requires QuarterlyWorstHistory")
+        history.add_outcome(feature, score, canonical, expression, round_id, outcome)
         row: dict[str, Any] = {
-            "expression": getattr(result, "expression", ""),
-            "score": outcome.score if math.isfinite(outcome.score) else None,
-            "rank_ic": getattr(metrics, "rank_ic", None) if metrics else None,
-            "rank_icir": getattr(metrics, "rank_icir", None) if metrics else None,
-            "mean": outcome.mean,
-            "std": outcome.std,
-            "worst": outcome.worst,
-            "sign_consistency": outcome.sign_consistency,
-            "noise_std": outcome.noise_std,
-            "dispersion_ratio": outcome.dispersion_ratio,
+            "expression": expression,
+            "score": outcome.score,
+            "train_rankic": outcome.train_rankic,
+            "worst_rankic": outcome.worst_rankic,
+            "worst_quarter": outcome.worst_quarter,
             "usable_days": outcome.usable_days,
             "rejected": outcome.rejected or "",
         }
-        for year, value, days in zip(outcome.years, outcome.segment_means, outcome.segment_days):
-            row[f"r_{year}"] = value
-            row[f"n_{year}"] = days
+        for quarter, value, days in zip(
+            outcome.quarters, outcome.quarterly_rankic, outcome.quarter_days
+        ):
+            row[f"{QUARTER_VALUE_PREFIX}{quarter}"] = value
+            row[f"{QUARTER_DAYS_PREFIX}{quarter}"] = days
         self._split_records.append(row)
-        return outcome.score
 
     def search(self, **kwargs: Any) -> Any:
         self._split_records = []
@@ -64,17 +140,13 @@ class SplitRobustLDM(AlphaLDM):
     def _write_split_history(self) -> None:
         if not self._split_records:
             return
-        years = sorted({
-            int(key.split("_", 1)[1])
-            for row in self._split_records
-            for key in row
-            if key.startswith("r_")
-        })
-        columns = list(FIXED_COLUMNS) + [f"r_{year}" for year in years] + [f"n_{year}" for year in years]
+        quarters = self.split_settings.quarters
+        columns = list(FIXED_COLUMNS)
+        columns += [f"{QUARTER_VALUE_PREFIX}{quarter}" for quarter in quarters]
+        columns += [f"{QUARTER_DAYS_PREFIX}{quarter}" for quarter in quarters]
         path = self.output_dir / "split_reward_history.csv"
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=columns, extrasaction="ignore")
             writer.writeheader()
-            for row in self._split_records:
-                writer.writerow({column: row.get(column) for column in columns})
+            writer.writerows(self._split_records)

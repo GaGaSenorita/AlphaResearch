@@ -143,9 +143,6 @@ def build_expansion_context(
         "period": run_name.rsplit("_seed", 1)[0].rsplit("_", 1)[-1],
         "train_start": str(args.get("train-start", "unknown")),
         "train_end": str(args.get("train-end", "unknown")),
-        # ldm_split_robust_reward sweeps this, and launchers refuse to overwrite an
-        # existing output directory, so it has to be nameable from the config.
-        "split_lambda": _slug(args.get("split-lambda", "na")),
     }
 
 

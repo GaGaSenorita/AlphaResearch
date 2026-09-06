@@ -25,6 +25,7 @@ Validation-selected Top-5 Test audits.
 - `ldm_minimal_prompt_harness`
 - `ldm_single_factor`
 - `ldm_split_robust_reward`
+- `ldm_rankic_worst_qehvi`
 - `ldm_rankic_rankicir_ehvi`
 - `ldm_rankic_turnover_ehvi`
 - `ldm_continuous_discovery`
@@ -58,6 +59,9 @@ export ALPHARESEARCH_LLM_API_KEY='...'
 
 Never put credentials in a YAML config or commit them to Git.
 
+For the prepared Apple Silicon Conda environment, local Qlib/FFO setup, and
+DeepSeek Flash launcher, see [`docs/LOCAL_MAC_SETUP.md`](docs/LOCAL_MAC_SETUP.md).
+
 ## Smoke test
 
 ```bash
@@ -83,6 +87,38 @@ Each run writes:
 
 Use `scripts/run_ldm_continuous_discovery.sh TARGET_ROUNDS SEED` on the original
 Linux layout, or invoke the CLI directly with environment-specific paths.
+
+## Stage 2 Method 1: worst-quarter Train objective
+
+`ldm_split_robust_reward` keeps the standard AlphaLDM proposal, 12D profile,
+GP, kernel, acquisition, and evaluation budget. Its only search change is the
+scalar GP target: one full 2016--2020 Train evaluation is grouped into the 20
+calendar quarters, and `worst_rankic` is the minimum quarterly mean signed
+RankIC. The run saves `train_rankic`, `worst_rankic`, `worst_quarter`, and all
+20 quarterly values in `ldm_history.csv` and `split_reward_history.csv`.
+
+## Stage 2 Method 2: RankIC-Worst qEHVI
+
+`ldm_rankic_worst_qehvi` reuses Method 1's exact 20-quarter aggregation and
+maximises `(train_rankic, worst_rankic)` in the Pareto sense. It fits two
+independent GPs on the existing 12D factor representation. Per-objective
+z-score normalisation and the dominated reference point are frozen from the 42
+initial Alpha158 observations. With the default 8-proposal/3-evaluation round,
+all 56 candidate triples are scored by Monte Carlo qEHVI using each GP's joint
+candidate covariance, and the best triple is evaluated.
+
+The 38-round DeepSeek Flash config is:
+
+```bash
+python scripts/run_experiment.py \
+  configs/ldm_rankic_worst_qehvi/ldm_rankic_worst_qehvi_neolink-deepseek-v4-flash_2016-2025.yaml
+```
+
+In addition to the standard artifacts, a run writes `pareto_archive.json` and
+`mobo_state.json`; these record the raw objectives, all quarterly RankICs,
+current Pareto membership, frozen normalisation/reference point, and final
+normalised hypervolume. Validation retains the standard RankIC Top-30 selection
+under the 0.8 daily-RankIC correlation boundary, and Test remains report-only.
 
 To backfill the denser R0/R10/.../R100 reporting schedule from preserved factor
 sequences without rerunning discovery or calling the LLM, start the real FFO

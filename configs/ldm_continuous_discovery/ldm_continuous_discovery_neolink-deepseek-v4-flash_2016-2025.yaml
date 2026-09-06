@@ -1,0 +1,67 @@
+name: ldm_continuous_discovery_neolink-deepseek-v4-flash_2016-2025
+method: ldm_continuous_discovery
+environment: static
+mode: real
+description: >
+  Local resumable AlphaLDM discovery on CSI300 using the Yangtze AI Lab
+  LiteLLM gateway and DeepSeek V4 Flash. Search uses Train only, Validation
+  selects each reported Top-5 pool, and Test remains retrospective audit only.
+args:
+  alphabench-root: "{repo_root}/external/AlphaBench"
+  qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
+  ffo-url: http://127.0.0.1:19777
+  ffo-label: close_return
+  ffo-fast: true
+  ffo-timeout: 600
+  ffo-topk: 50
+  ffo-n-drop: 5
+  ffo-forward-n: 1
+  no-ffo-use-cache: true
+  ffo-max-attempts: 3
+  market: csi300
+  train-start: 2016-01-01
+  train-end: 2020-12-29
+  val-start: 2021-01-01
+  val-end: 2021-12-29
+  test-start: 2022-01-01
+  test-end: 2025-12-26
+  objective: rank_ic
+  factor-budget: 5
+  max-correlation: 0.8
+  seed-group: all
+
+  search-rounds: 100
+  candidates-per-round: 8
+  generator-parallel: 8
+  history-shown: 24
+  profile-start: 2019-01-01
+  profile-end: 2020-12-29
+
+  acquisition: ucb
+  acquisition-beta: 2.0
+  softmax-temperature: 1.0
+  evaluate-per-round: 3
+  ldm-max-refill-batches: 8
+  gp-min-fit-data: 20
+  gp-lengthscale: null
+  gp-noise: 0.05
+  gp-scale: 0.25
+  gp-train-iters: 100
+  gp-lr: 0.05
+  ldm-random-seed: 42
+
+  continuous-resume: true
+  continuous-checkpoint-round: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+  continuous-checkpoint-factor-budget: 5
+  continuous-rank-ic-threshold: 0.035
+
+  eval-parallel: 1
+  llm-base-url: https://litellm.yangtzeailab.com/v1
+  llm-model: neolink/technologies/deepseek-v4-flash
+  llm-api-key-env: ALPHARESEARCH_LLM_API_KEY
+  llm-temperature: 0.7
+  llm-timeout-seconds: 120
+  llm-context-window: 131072
+  llm-max-tokens: 8192
+  llm-reasoning-effort: none
+

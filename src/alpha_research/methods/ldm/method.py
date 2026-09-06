@@ -354,6 +354,32 @@ class AlphaLDM:
                 )
         return mean, std, values, {}
 
+    def _candidate_batch_acquisition(
+        self,
+        *,
+        surrogate: Any,
+        history: History,
+        features: np.ndarray,
+        batch_size: int,
+        rng: random.Random,
+    ) -> dict[str, Any] | None:
+        """Optional joint-batch acquisition hook.
+
+        Returning ``None`` preserves the original pointwise acquisition plus
+        repeated softmax sampling path exactly.  A method that genuinely scores
+        candidate *sets* (for example qEHVI) returns posterior diagnostics, one
+        selected local-index batch, and an auditable event payload.
+        """
+
+        del surrogate, history, features, batch_size, rng
+        return None
+
+    def _round_event_fields(self, history: History, surrogate: Any) -> dict[str, Any]:
+        """Optional method diagnostics computed after a complete real batch."""
+
+        del history, surrogate
+        return {}
+
     def _warmup_event_fields(self, history: History, surrogate: Any) -> dict[str, Any]:
         del history, surrogate
         return {}
@@ -686,12 +712,51 @@ class AlphaLDM:
                     continue
 
                 features = np.vstack([record["feature"] for record in profiled])
-                mean, std, values, batch_diagnostics = self._candidate_acquisition(
+                requested_batch_size = min(
+                    self.evaluate_per_round - successful_evaluations,
+                    len(profiled),
+                )
+                batch_decision = self._candidate_batch_acquisition(
                     surrogate=surrogate,
                     history=history,
                     features=features,
+                    batch_size=requested_batch_size,
                     rng=rng,
                 )
+                selection_queue: list[int] | None = None
+                batch_event: dict[str, Any] | None = None
+                if batch_decision is None:
+                    mean, std, values, batch_diagnostics = self._candidate_acquisition(
+                        surrogate=surrogate,
+                        history=history,
+                        features=features,
+                        rng=rng,
+                    )
+                else:
+                    mean = np.asarray(batch_decision["mean"], dtype=float).ravel()
+                    std = np.asarray(batch_decision["std"], dtype=float).ravel()
+                    values = np.asarray(
+                        batch_decision["candidate_acquisition"], dtype=float
+                    ).ravel()
+                    batch_diagnostics = dict(batch_decision.get("diagnostics") or {})
+                    selection_queue = [
+                        int(index) for index in batch_decision["selected_indices"]
+                    ]
+                    if len(mean) != len(profiled) or len(std) != len(profiled):
+                        raise ValueError("batch posterior diagnostics do not match slate size")
+                    if len(values) != len(profiled):
+                        raise ValueError("batch candidate diagnostics do not match slate size")
+                    if (
+                        len(selection_queue) != requested_batch_size
+                        or len(set(selection_queue)) != len(selection_queue)
+                        or any(index < 0 or index >= len(profiled) for index in selection_queue)
+                    ):
+                        raise ValueError(
+                            "batch acquisition returned invalid selected indices: "
+                            f"{selection_queue!r} for slate size {len(profiled)} and "
+                            f"batch size {requested_batch_size}"
+                        )
+                    batch_event = dict(batch_decision.get("event") or {})
 
                 offset = len(all_profiled)
                 all_profiled.extend(profiled)
@@ -702,11 +767,36 @@ class AlphaLDM:
                     acquisition_diagnostics.setdefault(key, []).extend(
                         float(value) for value in diagnostic_values
                     )
-                remaining = list(range(len(profiled)))
+                remaining = (
+                    list(range(len(profiled)))
+                    if selection_queue is None
+                    else list(selection_queue)
+                )
+
+                if batch_event is not None:
+                    emit({
+                        "event": "ldm_batch_acquisition",
+                        "cycle_id": cycle_id,
+                        "round_id": round_id,
+                        "refill_batch": generation_batches,
+                        "candidate_expressions": [
+                            record["expression"] for record in profiled
+                        ],
+                        "selected_local_indices": list(selection_queue or ()),
+                        "selected_global_indices": [
+                            offset + index for index in (selection_queue or ())
+                        ],
+                        **batch_event,
+                    })
 
                 while remaining and successful_evaluations < self.evaluate_per_round:
-                    position = softmax_sample(values[remaining], rng, self.softmax_temperature)
-                    chosen = remaining.pop(position)
+                    if selection_queue is None:
+                        position = softmax_sample(
+                            values[remaining], rng, self.softmax_temperature
+                        )
+                        chosen = remaining.pop(position)
+                    else:
+                        chosen = remaining.pop(0)
                     chosen_indices.append(offset + chosen)
                     selected = profiled[chosen]
                     candidate = FactorCandidate(
@@ -822,6 +912,7 @@ class AlphaLDM:
                 "evaluate_seconds": round(evaluate_seconds, 3),
             }
             round_event.update(acquisition_diagnostics)
+            round_event.update(self._round_event_fields(history, surrogate))
             emit(round_event)
 
             if successful_evaluations != self.evaluate_per_round:

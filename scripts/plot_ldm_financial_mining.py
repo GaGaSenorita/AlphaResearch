@@ -208,6 +208,22 @@ def retrospective_test_best_so_far(
     return records
 
 
+def regular_checkpoint_rows(
+    checkpoints: list[dict[str, Any]],
+    snapshot_round: int,
+    step: int = 10,
+) -> list[dict[str, Any]]:
+    """Select the regular reporting grid while retaining legacy audits on disk."""
+    if step <= 0:
+        raise ValueError("checkpoint step must be positive")
+    requested = set(range(0, snapshot_round + 1, step))
+    requested.add(snapshot_round)
+    return [
+        row for row in sorted(checkpoints, key=lambda item: item["checkpoint_round"])
+        if int(row["checkpoint_round"]) in requested
+    ]
+
+
 def staged_single_test_results(checkpoints: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Collect each staged Top-5 constituent's first recorded single-factor Test result."""
     seen: set[str] = set()
@@ -293,7 +309,10 @@ def draw_panel(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     snapshot_round = int(state["round_id"])
     factor_count = int(factor_payload["factor_count"])
     sequence = list(factor_payload["factors"])
-    checkpoints = sorted(report["checkpoints"], key=lambda row: row["checkpoint_round"])
+    all_checkpoints = sorted(
+        report["checkpoints"], key=lambda row: row["checkpoint_round"]
+    )
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
     checkpoint_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
     checkpoint_values = [
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
@@ -553,7 +572,10 @@ def draw_trajectory_only(data_dir: Path, output_prefix: Path) -> dict[str, Any]:
     snapshot_round = int(state["round_id"])
     factor_count = int(factor_payload["factor_count"])
     sequence = list(factor_payload["factors"])
-    checkpoints = sorted(report["checkpoints"], key=lambda row: row["checkpoint_round"])
+    all_checkpoints = sorted(
+        report["checkpoints"], key=lambda row: row["checkpoint_round"]
+    )
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
     test_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
     test_values = [
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
@@ -753,7 +775,10 @@ def draw_trajectory_with_single_test(
     snapshot_round = int(state["round_id"])
     factor_count = int(factor_payload["factor_count"])
     sequence = list(factor_payload["factors"])
-    checkpoints = sorted(report["checkpoints"], key=lambda row: row["checkpoint_round"])
+    all_checkpoints = sorted(
+        report["checkpoints"], key=lambda row: row["checkpoint_round"]
+    )
+    checkpoints = regular_checkpoint_rows(all_checkpoints, snapshot_round, step=10)
     test_rounds = [int(row["checkpoint_round"]) for row in checkpoints]
     test_values = [
         float(row["test_equal_weight_rank_pool"]["metrics"]["rank_ic"])
@@ -884,8 +909,8 @@ def draw_trajectory_with_single_test(
         color=TEAL, linewidth=3.0, zorder=7,
         label="Retrospective Test best-so-far · diagnostic only",
     )
-    if not show_single_test:
-        # A process guide before the first Test checkpoint, explicitly not a metric.
+    if not show_single_test and test_rounds[0] > 0:
+        # Only draw a pre-measurement guide when the first real audit is after R0.
         test_ax.annotate(
             "", xy=(test_rounds[0], test_values[0]),
             xytext=(0, test_values[0]),
@@ -1038,6 +1063,10 @@ def draw_trajectory_with_single_test(
             {"round": round_id, "rank_ic": value}
             for round_id, value in zip(test_rounds, test_values)
         ],
+        "available_checkpoint_rounds": [
+            int(row["checkpoint_round"]) for row in all_checkpoints
+        ],
+        "displayed_checkpoint_schedule": "R0/R10/.../R100",
         "retrospective_test_best_so_far": test_best_records,
         "single_factor_points_displayed": show_single_test,
         "staged_single_factor_test_results": single_results if show_single_test else [],

@@ -72,11 +72,23 @@
   ],
   "measured_top5_test_checkpoints": [
     {
+      "round": 0,
+      "rank_ic": 0.022413163052378157
+    },
+    {
+      "round": 10,
+      "rank_ic": 0.035560278355646416
+    },
+    {
       "round": 20,
       "rank_ic": 0.035560278355646416
     },
     {
-      "round": 38,
+      "round": 30,
+      "rank_ic": 0.035560278355646416
+    },
+    {
+      "round": 40,
       "rank_ic": 0.03761906847765277
     },
     {
@@ -84,49 +96,119 @@
       "rank_ic": 0.03761906847765277
     },
     {
-      "round": 75,
+      "round": 60,
       "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 70,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 80,
+      "rank_ic": 0.03957905577257804
+    },
+    {
+      "round": 90,
+      "rank_ic": 0.042431898520551424
     },
     {
       "round": 100,
       "rank_ic": 0.04243188883902932
     }
   ],
+  "available_checkpoint_rounds": [
+    0,
+    10,
+    20,
+    30,
+    38,
+    40,
+    50,
+    60,
+    70,
+    75,
+    80,
+    90,
+    100
+  ],
+  "displayed_checkpoint_schedule": "R0/R10/.../R100",
   "retrospective_test_best_so_far": [
     {
-      "round": 20,
+      "round": 0,
+      "rank_ic": 0.022413163052378157,
+      "source_round": 0,
+      "raw_rank_ic": 0.022413163052378157,
+      "improved": true
+    },
+    {
+      "round": 10,
       "rank_ic": 0.035560278355646416,
-      "source_round": 20,
+      "source_round": 10,
       "raw_rank_ic": 0.035560278355646416,
       "improved": true
     },
     {
-      "round": 38,
+      "round": 20,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
+      "round": 30,
+      "rank_ic": 0.035560278355646416,
+      "source_round": 10,
+      "raw_rank_ic": 0.035560278355646416,
+      "improved": false
+    },
+    {
+      "round": 40,
       "rank_ic": 0.03761906847765277,
-      "source_round": 38,
+      "source_round": 40,
       "raw_rank_ic": 0.03761906847765277,
       "improved": true
     },
     {
       "round": 50,
       "rank_ic": 0.03761906847765277,
-      "source_round": 38,
+      "source_round": 40,
       "raw_rank_ic": 0.03761906847765277,
       "improved": false
     },
     {
-      "round": 75,
+      "round": 60,
       "rank_ic": 0.03957905577257804,
-      "source_round": 75,
+      "source_round": 60,
       "raw_rank_ic": 0.03957905577257804,
       "improved": true
     },
     {
-      "round": 100,
-      "rank_ic": 0.04243188883902932,
-      "source_round": 100,
-      "raw_rank_ic": 0.04243188883902932,
+      "round": 70,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
+      "round": 80,
+      "rank_ic": 0.03957905577257804,
+      "source_round": 60,
+      "raw_rank_ic": 0.03957905577257804,
+      "improved": false
+    },
+    {
+      "round": 90,
+      "rank_ic": 0.042431898520551424,
+      "source_round": 90,
+      "raw_rank_ic": 0.042431898520551424,
       "improved": true
+    },
+    {
+      "round": 100,
+      "rank_ic": 0.042431898520551424,
+      "source_round": 90,
+      "raw_rank_ic": 0.04243188883902932,
+      "improved": false
     }
   ],
   "single_factor_points_displayed": false,
@@ -134,11 +216,11 @@
   "illustrative_projection": null,
   "threshold": 0.035,
   "test_usage": "retrospective audit only; not used for search or selection",
-  "data_dir": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
+  "data_dir": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42",
   "outputs": {
-    "png": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.png",
-    "svg": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.svg",
-    "pdf": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.pdf",
-    "metadata": "/Users/senorita/Desktop/AlphaLDM Project/AlphaResearch-recovered/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.json"
+    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.png",
+    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.svg",
+    "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.pdf",
+    "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/runs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed42/figure.json"
   }
 }
