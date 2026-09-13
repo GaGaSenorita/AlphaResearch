@@ -14,12 +14,15 @@ from .data import (
     retrospective_test_best_so_far, short_name, train_leaders_at_rounds,
 )
 from .style import GRID, MUTED, NAVY, ORANGE, PAPER, PURPLE, PURPLE_DARK, RAW_TEST, TEAL
+from .output import FIGURE_FORMATS, save_figure
 
 
 def draw_financial_trajectory(
     data_dir: Path,
     output_prefix: Path,
     seed: int | None = None,
+    *,
+    output_format: str = "pdf",
 ) -> dict[str, Any]:
     """Draw aligned Train and Test panels, with measured Validation-selected Top-5 Test audits."""
     state = load_json(data_dir / "resume_state.json")
@@ -195,15 +198,10 @@ def draw_financial_trajectory(
         handlelength=2.5, columnspacing=1.7,
     )
 
-    output_prefix.parent.mkdir(parents=True, exist_ok=True)
-    paths = {
-        "png": output_prefix.with_suffix(".png"),
-        "svg": output_prefix.with_suffix(".svg"),
-        "pdf": output_prefix.with_suffix(".pdf"),
-    }
-    fig.savefig(paths["png"], dpi=240, facecolor=PAPER, bbox_inches="tight", pad_inches=0.08)
-    fig.savefig(paths["svg"], facecolor=PAPER, bbox_inches="tight", pad_inches=0.08)
-    fig.savefig(paths["pdf"], facecolor=PAPER, bbox_inches="tight", pad_inches=0.08)
+    paths = {output_format: save_figure(
+        fig, output_prefix, output_format=output_format, facecolor=PAPER,
+        bbox_inches="tight", pad_inches=0.08,
+    )}
     plt.close(fig)
 
     metadata = {
@@ -244,9 +242,12 @@ def main() -> int:
     parser.add_argument("--data-dir", type=Path, required=True)
     parser.add_argument("--output-prefix", type=Path, required=True)
     parser.add_argument("--seed", type=int)
+    parser.add_argument("--format", choices=FIGURE_FORMATS, default="pdf",
+                        help="one output image format (default: pdf)")
     args = parser.parse_args()
     metadata = draw_financial_trajectory(
         args.data_dir.resolve(), args.output_prefix.resolve(), seed=args.seed,
+        output_format=args.format,
     )
     print(json.dumps(metadata, indent=2, ensure_ascii=False))
     return 0

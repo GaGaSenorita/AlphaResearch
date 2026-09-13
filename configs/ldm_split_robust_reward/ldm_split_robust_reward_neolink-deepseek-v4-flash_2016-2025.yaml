@@ -5,9 +5,10 @@ mode: real
 description: >
   Stage 2 Method 1 on CSI300 using the Yangtze AI Lab LiteLLM gateway and
   DeepSeek V4 Flash. This differs from ldm_standard only in the Train reward:
-  one full 2016-2020 evaluation is aggregated to 20 calendar-quarter mean
+  one full 2016-2020 evaluation is aggregated to five calendar-year mean
   signed RankIC values and the GP target is their minimum.
 args:
+  out-dir: "{repo_root}/../AlphaResearch_local_results/stage2/{method}/{run_name}"
   alphabench-root: "{repo_root}/external/AlphaBench"
   qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
   ffo-url: http://127.0.0.1:19777

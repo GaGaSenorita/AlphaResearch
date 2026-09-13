@@ -3,10 +3,11 @@ method: ldm_split_robust_reward
 environment: static
 mode: real
 description: >
-  Stage 2 Method 1: AlphaLDM with a Train-only worst-case calendar-quarter
+  Stage 2 Method 1: AlphaLDM with a Train-only worst-case calendar-year
   objective. Each factor is evaluated once on 2016-2020; the GP target is the
-  minimum of its 20 quarterly mean signed RankIC values.
+  minimum of its five yearly mean signed RankIC values.
 args:
+  out-dir: "{repo_root}/../AlphaResearch_local_results/stage2/{method}/{run_name}"
   alphabench-root: "{repo_root}/external/AlphaBench"
   qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
   ffo-url: http://127.0.0.1:19777
@@ -53,10 +54,9 @@ args:
   eval-parallel: 1
   llm-base-url: https://api.deepseek.com/v1
   llm-model: deepseek-v4-pro
-  llm-api-key-env: ALPHARESEARCH_LLM_API_KEY
+  llm-api-key-env: ALPHARESEARCH_DEEPSEEK_API_KEY
   llm-temperature: 0.7
   llm-timeout-seconds: 120
   llm-context-window: 1000000
   llm-max-tokens: 320000
-  llm-reasoning-effort: high
-  llm-thinking: true
+  llm-reasoning-effort: none

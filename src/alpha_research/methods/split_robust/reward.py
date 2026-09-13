@@ -1,9 +1,8 @@
-"""Worst-case calendar-quarter reward from one full Train evaluation.
+"""Annual Train rewards shared by Stage-2 Method 1 and Method 2.
 
-The evaluator is called once for the complete 2016--2020 Train window. This
-module only aggregates the returned *signed* daily RankIC series: first one
-mean per calendar quarter, then the minimum of those 20 means. It does not
-evaluate quarters separately and never flips a factor's sign per quarter.
+Each factor is evaluated once over 2016--2020. Aggregate its signed daily
+RankIC into five calendar-year means, then take their minimum. There is no
+per-year sign adjustment or separate evaluation for each year.
 """
 
 from __future__ import annotations
@@ -14,17 +13,9 @@ from datetime import date
 from typing import Any
 
 
-def _quarter_labels(start_year: int, end_year: int) -> tuple[str, ...]:
-    return tuple(
-        f"{year}Q{quarter}"
-        for year in range(start_year, end_year + 1)
-        for quarter in range(1, 5)
-    )
-
-
 @dataclass(frozen=True)
-class SplitSettings:
-    """Frozen Stage-2 Method-1 split contract."""
+class YearlySplitSettings:
+    """Frozen calendar-year Train split shared by both Stage-2 methods."""
 
     start_year: int = 2016
     end_year: int = 2020
@@ -32,36 +23,36 @@ class SplitSettings:
     def __post_init__(self) -> None:
         if self.start_year != 2016 or self.end_year != 2020:
             raise ValueError(
-                "Worst-Case Train-Split Objective is fixed to 2016Q1--2020Q4"
+                "Worst-Case Train-Split Objective is fixed to 2016--2020"
             )
 
     @property
-    def quarters(self) -> tuple[str, ...]:
-        return _quarter_labels(self.start_year, self.end_year)
+    def years(self) -> tuple[str, ...]:
+        return tuple(str(year) for year in range(self.start_year, self.end_year + 1))
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "objective": "worst_rankic",
-            "segmentation": "calendar_quarter",
+            "segmentation": "calendar_year",
             "train_years": [self.start_year, self.end_year],
-            "quarters": list(self.quarters),
-            "aggregation": "minimum_of_quarterly_mean_signed_rankic",
+            "years": list(self.years),
+            "aggregation": "minimum_of_yearly_mean_signed_rankic",
             "factor_evaluations_per_score": 1,
-            "per_quarter_sign_flip": False,
+            "per_year_sign_flip": False,
         }
 
 
 @dataclass(frozen=True)
-class SplitScore:
-    """One scalar GP target plus the quarter-level audit trail behind it."""
+class YearlySplitScore:
+    """One scalar GP target plus the year-level audit trail behind it."""
 
     score: float
-    quarters: tuple[str, ...] = ()
-    quarterly_rankic: tuple[float, ...] = ()
-    quarter_days: tuple[int, ...] = ()
+    years: tuple[str, ...] = ()
+    yearly_rankic: tuple[float, ...] = ()
+    year_days: tuple[int, ...] = ()
     train_rankic: float | None = None
     worst_rankic: float | None = None
-    worst_quarter: str | None = None
+    worst_year: str | None = None
     usable_days: int = 0
     rejected: str | None = None
     settings: dict[str, Any] = field(default_factory=dict)
@@ -69,25 +60,20 @@ class SplitScore:
     def to_dict(self) -> dict[str, Any]:
         return {
             "score": self.score if math.isfinite(self.score) else None,
-            "quarters": list(self.quarters),
-            "quarterly_rankic": {
-                quarter: value
-                for quarter, value in zip(self.quarters, self.quarterly_rankic)
+            "years": list(self.years),
+            "yearly_rankic": {
+                year: value for year, value in zip(self.years, self.yearly_rankic)
             },
-            "quarter_days": {
-                quarter: days for quarter, days in zip(self.quarters, self.quarter_days)
+            "year_days": {
+                year: days for year, days in zip(self.years, self.year_days)
             },
             "train_rankic": self.train_rankic,
             "worst_rankic": self.worst_rankic,
-            "worst_quarter": self.worst_quarter,
+            "worst_year": self.worst_year,
             "usable_days": self.usable_days,
             "rejected": self.rejected,
             "settings": dict(self.settings),
         }
-
-
-def _quarter_label(day: date) -> str:
-    return f"{day.year}Q{((day.month - 1) // 3) + 1}"
 
 
 def _finite_train_rankic(result: Any) -> float | None:
@@ -100,7 +86,7 @@ def _finite_train_rankic(result: Any) -> float | None:
     return number if math.isfinite(number) else None
 
 
-def _daily_by_quarter(result: Any) -> dict[str, list[float]]:
+def _daily_by_year(result: Any) -> dict[str, list[float]]:
     grouped: dict[str, list[float]] = {}
     for record in getattr(result, "daily_metrics", ()) or ():
         if not isinstance(record, dict):
@@ -112,21 +98,27 @@ def _daily_by_quarter(result: Any) -> dict[str, list[float]]:
         except (TypeError, ValueError):
             continue
         if math.isfinite(value):
-            grouped.setdefault(_quarter_label(day), []).append(value)
+            grouped.setdefault(str(day.year), []).append(value)
     return grouped
 
 
-def split_score(result: Any, settings: SplitSettings | None = None) -> SplitScore:
-    """Return ``min_q mean(daily signed RankIC in q)`` for 2016Q1--2020Q4."""
+def yearly_split_score(
+    result: Any, settings: YearlySplitSettings | None = None
+) -> YearlySplitScore:
+    """Return ``min_y mean(daily signed RankIC in y)`` for 2016--2020.
 
-    settings = settings or SplitSettings()
-    expected = settings.quarters
-    grouped = _daily_by_quarter(result)
-    missing = [quarter for quarter in expected if not grouped.get(quarter)]
-    usable_days = sum(len(grouped.get(quarter, ())) for quarter in expected)
+    Aggregate an existing full-Train evaluation without another evaluator call
+    or any per-year sign adjustment. Every Train year must have finite data.
+    """
+
+    settings = settings or YearlySplitSettings()
+    expected = settings.years
+    grouped = _daily_by_year(result)
+    missing = [year for year in expected if not grouped.get(year)]
+    usable_days = sum(len(grouped.get(year, ())) for year in expected)
     train_rankic = _finite_train_rankic(result)
     if missing:
-        return SplitScore(
+        return YearlySplitScore(
             score=float("-inf"),
             train_rankic=train_rankic,
             usable_days=usable_days,
@@ -134,20 +126,36 @@ def split_score(result: Any, settings: SplitSettings | None = None) -> SplitScor
             settings=settings.to_dict(),
         )
 
-    quarterly = tuple(
-        math.fsum(grouped[quarter]) / len(grouped[quarter]) for quarter in expected
+    yearly = tuple(
+        math.fsum(grouped[year]) / len(grouped[year]) for year in expected
     )
-    counts = tuple(len(grouped[quarter]) for quarter in expected)
-    worst_index = min(range(len(quarterly)), key=quarterly.__getitem__)
-    worst_rankic = float(quarterly[worst_index])
-    return SplitScore(
+    nonfinite = [year for year, value in zip(expected, yearly) if not math.isfinite(value)]
+    if nonfinite:
+        return YearlySplitScore(
+            score=float("-inf"),
+            train_rankic=train_rankic,
+            usable_days=usable_days,
+            rejected="non-finite yearly mean rank_ic for: " + ", ".join(nonfinite),
+            settings=settings.to_dict(),
+        )
+
+    counts = tuple(len(grouped[year]) for year in expected)
+    worst_index = min(range(len(yearly)), key=yearly.__getitem__)
+    worst_rankic = float(yearly[worst_index])
+    return YearlySplitScore(
         score=worst_rankic,
-        quarters=expected,
-        quarterly_rankic=quarterly,
-        quarter_days=counts,
+        years=expected,
+        yearly_rankic=yearly,
+        year_days=counts,
         train_rankic=train_rankic,
         worst_rankic=worst_rankic,
-        worst_quarter=expected[worst_index],
+        worst_year=expected[worst_index],
         usable_days=usable_days,
         settings=settings.to_dict(),
     )
+
+
+# Public shorthand retained for callers of the shared scoring API.
+SplitSettings = YearlySplitSettings
+SplitScore = YearlySplitScore
+split_score = yearly_split_score

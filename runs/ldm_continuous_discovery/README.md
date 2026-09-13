@@ -21,9 +21,6 @@ Each canonical `ldm_continuous_discovery_*_seed<seed>/` directory contains:
   all 21 checkpoints R0/R5/.../R100, plus the preserved off-grid R38 audit.
   Original records are unchanged; additional checkpoints are post-hoc reports
   using only the factors available at that round, not new discovery runs;
-- `figure.{png,svg,pdf}` and `figure.json`: the corresponding two-panel
-  Train/Test result figure and plotting inputs. The gray points are raw Test
-  audits and the teal step is the explicitly retrospective best-so-far envelope;
 - `legacy_import.json` for seeds 123 and 456, documenting migration of their
   original 38-round histories;
 - `checkpoint_validation_ledger.jsonl`: the original Validation ledger plus
@@ -40,7 +37,8 @@ it is not the final R100 pool score. Differences at roughly 1e-8 precision,
 such as seed 42's R90 versus R100 values, are not meaningful improvements.
 
 Run `python scripts/render_ldm_report_figures.py` from the repository root to
-regenerate all four figures and the per-run copies without any API calls.
+regenerate all four canonical PDF figures under `figures/`, with JSON plotting
+inputs, without any API calls. Duplicate per-run exports are archived locally.
 
 ## Recovery boundary
 

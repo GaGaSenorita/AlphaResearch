@@ -17,6 +17,7 @@ from .data import (
     retrospective_test_best_so_far, train_leaders_at_rounds,
 )
 from .style import RAW_TEST
+from .output import FIGURE_FORMATS, save_figure
 
 
 
@@ -69,6 +70,8 @@ def load_seed_report(seed: int, data_dir: Path) -> dict[str, Any]:
 def draw_comparison(
     seed_dirs: dict[int, Path],
     output_prefix: Path,
+    *,
+    output_format: str = "pdf",
 ) -> dict[str, Any]:
     records = [load_seed_report(seed, seed_dirs[seed]) for seed in sorted(seed_dirs)]
     if sorted(seed_dirs) != [42, 123, 456]:
@@ -261,21 +264,10 @@ def draw_comparison(
         color="#858C9C",
     )
 
-    output_prefix.parent.mkdir(parents=True, exist_ok=True)
-    outputs = {
-        "png": output_prefix.with_suffix(".png"),
-        "svg": output_prefix.with_suffix(".svg"),
-        "pdf": output_prefix.with_suffix(".pdf"),
-    }
-    for kind, path in outputs.items():
-        kwargs: dict[str, Any] = {
-            "facecolor": "#FFFFFF",
-            "bbox_inches": "tight",
-            "pad_inches": 0.08,
-        }
-        if kind == "png":
-            kwargs["dpi"] = 240
-        fig.savefig(path, **kwargs)
+    outputs = {output_format: save_figure(
+        fig, output_prefix, output_format=output_format, facecolor="#FFFFFF",
+        bbox_inches="tight", pad_inches=0.08,
+    )}
     plt.close(fig)
 
     metadata = {
@@ -319,8 +311,10 @@ def main() -> int:
         help="completed continuous-discovery run directory; pass once per seed",
     )
     parser.add_argument("--output-prefix", type=Path, required=True)
+    parser.add_argument("--format", choices=FIGURE_FORMATS, default="pdf",
+                        help="one output image format (default: pdf)")
     args = parser.parse_args()
     seed_dirs = dict(_parse_seed_dir(value) for value in args.seed_dir)
-    metadata = draw_comparison(seed_dirs, args.output_prefix.resolve())
+    metadata = draw_comparison(seed_dirs, args.output_prefix.resolve(), output_format=args.format)
     print(json.dumps(metadata["outputs"], indent=2, ensure_ascii=False))
     return 0

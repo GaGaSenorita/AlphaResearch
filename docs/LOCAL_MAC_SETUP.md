@@ -7,7 +7,7 @@ on the Mac CPU.
 ## Activate and verify
 
 ```bash
-cd "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch"
+cd /path/to/AlphaResearch
 conda activate AlphaResearch
 bash scripts/check_local_setup.sh
 ```

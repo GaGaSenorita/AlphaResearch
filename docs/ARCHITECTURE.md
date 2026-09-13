@@ -1,74 +1,74 @@
 # Research architecture
 
-The CLI expands YAML once, `arguments.py` defines the option contract, and
-`runner.py` builds the method, profiler and evaluator. `StaticEnvironment` owns
-the Train/search → Validation selection → frozen Test reporting protocol.
-`runner.parse_args` remains available for existing integrations.
+The CLI expands YAML, `arguments.py` defines options, and `runner.py` builds the
+method, profiler and evaluator. `StaticEnvironment` owns the chronological
+Train/search, Validation/selection and test/reporting protocol.
 
-## Methods
+## Method map
 
 | Role | Modules / configured method names |
 | --- | --- |
-| Shared AlphaLDM search | `methods/ldm`: proposal, history, GP, acquisition and scalar search loop |
-| Stage I baseline | `ldm_standard`; `ldm_continuous_discovery` adds durable round commits and checkpoint reports |
-| Stage II Method 1 | `ldm_split_robust_reward`, using `split_robust/reward.py` |
-| Stage II Method 2 | `ldm_rankic_worst_qehvi`, sharing the quarterly reward and `ldm/multi_objective.py` |
+| Shared LDM search | `methods/ldm`: proposal, history, GP, acquisition and scalar search |
+| Pure LDM | `ldm_standard`; `ldm_continuous_discovery` adds durable round commits |
+| Stage II Method 1 | `ldm_split_robust_reward`, using annual `split_robust/reward.py` |
+| Stage II Method 2 | `ldm_rankic_worst_qehvi`, sharing annual reward and `ldm/multi_objective.py` |
 | Baselines | `baseline_alpha158`, `baseline_alphabench_cot` |
-| Configured research variants | `ldm_cold_start`, `ldm_single_factor`, `ldm_prompt_harness`, `ldm_minimal_prompt_harness`, `ldm_rankic_rankicir_ehvi`, `ldm_rankic_turnover_ehvi` |
+| Other variants | `ldm_cold_start`, `ldm_single_factor`, `ldm_prompt_harness`, `ldm_minimal_prompt_harness`, `ldm_rankic_rankicir_ehvi`, `ldm_rankic_turnover_ehvi` |
 
-Variants are retained because they have explicit configurations and/or tests;
-being absent from the main paper does not make them disposable. This map does
-not claim that every seed or variant has a completed experiment.
+All original method identifiers remain. `environments/online.py` is a rolling-
+protocol library; the research CLI currently enables only the static environment.
+The API dashboard belongs to a separate branch.
 
-`environments/online.py` is a retained rolling-protocol library, not the API
-dashboard's real-time execution mode. The research CLI currently accepts only
-the static environment. The FastAPI application lives on `AlphaLDM_API`.
+## Pure LDM data flow
 
-## Shared services
+1. Load the fixed Alpha158 seeds; evaluate on Train and compute label-free profiles.
+2. Build LLM context from the training incumbent and recent verified training records.
+3. Generate, validate, deduplicate and profile candidate expressions.
+4. Fit the GP on verified profile/reward pairs; select candidates through UCB and
+   pool-standardised sampling.
+5. Verify external formula identity, period and finite daily measurements before
+   appending observations. Valid negative rewards remain in the archive.
+6. Update the context and commit complete rounds. Run configured Validation/test
+   reports separately from search.
 
-- `formula.py` / `canonical.py`: DSL validation and canonical deduplication.
-- `profile.py`: fixed-window, label-free 12D representation.
-- `evaluator.py` / `alphabench_runtime.py`: verified external results and pinned
-  AlphaBench loading. Vendor deltas live in `integrations/alphabench/`.
-- `factor_library.py`: cross-seed library admission and descriptive audits.
-- `reporting/data.py`: pure saved-record extraction; no live evaluation.
-- `reporting/financial.py` / `comparison.py`: individual and cross-seed plots.
+`formula.py` and `canonical.py` implement DSL checks. `profile.py` provides a fixed
+12-dimensional map within Train. `evaluator.py` independently verifies the external
+service. Vendor changes are confined to `integrations/alphabench/`.
 
-Reporting never recomputes Validation selection inside the plotter. It reads the
-saved Top-5 audits, checks the requested measurement grid, and rejects missing
-or non-finite Test points. Manual projections are not supported.
+## Integrity and continuation
 
-## Script responsibilities
+Explicit profiling bounds must be paired and contained in Train. A complete GP
+refit initialises every parameter, including likelihood noise, from the same
+configuration. Resume checks cover search settings, profiling identity and the
+GP fitting policy; incompatible historical signatures are rejected.
 
-| Entry | Responsibility |
+Continuous discovery protects existing output directories, verifies the ledger
+and can recover a torn final append while retaining those bytes for inspection.
+Middle-of-file corruption or altered measurements are errors. Failed final test
+evaluations cannot be reported as completed successful experiments.
+
+These properties are tested with controlled synthetic evaluations. Historical
+financial records have not been regenerated under the cleanup's corrected code.
+
+## Reporting and entry points
+
+Plotters read saved records without reselecting factors or requesting evaluation.
+`reporting/output.py` saves one visual format (PDF by default); JSON/CSV retain
+measurements and provenance.
+
+| Entry point | Purpose |
 | --- | --- |
 | `run_experiment.py` | Configuration-first experiment CLI |
-| `run_local_continuous_discovery.sh` | Prepared macOS runtime launcher |
-| `run_stage2_seed_matrix.py` | Existing bounded Stage II seed queue |
-| `setup_alphabench.py`, `check_local_setup.sh` | Integration and runtime checks |
-| `render_ldm_report_figures.py` | Three individual exports, run copies and comparison |
-| `plot_ldm_financial_mining.py`, `plot_ldm_three_seed_comparison.py` | Thin individual plotting entry points |
-| `backfill_ldm_checkpoint_reports.py` | Real Validation/Test reporting backfill; no search rerun |
-| `build_single_factor_library.py` | Saved-record factor library construction |
-| `backfill_single_factor_validation.py`, `audit_single_factor_test.py` | Missing real single-factor measurements |
+| `run_stage2_seed_matrix.py` | Annual Stage II queue and compatible-result checks |
+| `setup_alphabench.py` | Pinned dependency and integrity patch verification |
+| `render_ldm_report_figures.py` | Three LDM run plots and combined comparison |
+| `render_stage1_thesis_figures.py` | Thesis trajectories from saved checkpoints |
+| `plot_representative_factor_nav.py` | Factor-sorted NAVs from daily CSVs |
+| `backfill_ldm_checkpoint_reports.py` | Verified Validation/test backfill without search |
+| `build_single_factor_library.py` | Cross-seed factor library from saved records |
+| `backfill_single_factor_validation.py`, `audit_single_factor_test.py` | Missing real measurements |
+| `reanalyse_validation_worst_year_topk.py` | Explicit post-hoc annual selection analysis |
+| `package_submission.py` | Source-and-evidence ZIP with checksums |
 
-Backfill and experiment commands use the same `cli.resolved_runner_args`
-expansion. The scripts do not maintain separate parameter defaults.
-
-## Cleanup boundary (September 2026)
-
-The cleanup removes the old 5350-specific shell launchers, the one-off
-`run_ldm_legacy_pair.py` worker, unused historical `methods/alphaldm` and
-`methods/baselines` import aliases, and obsolete poster/single-factor/projection
-plot layouts. Their previous contents are recoverable from Git commit
-`7842fd9`. Verified legacy import logic remains in
-`methods/ldm_continuous_discovery/legacy.py` and keeps its tests and CLI option.
-
-No method reward, proposal budget, GP setting, canonical config/run name, stored
-result, factor library or saved scientific figure is changed. The API branch
-is separate and is not merged or reset by this cleanup.
-
-The synthetic `MockFactorEvaluator` now emits deterministic ISO-dated weekdays
-across the requested period instead of five malformed dates. This repairs
-quarterly-objective smoke tests; it does not change real evaluation. Mock runs
-created before this change should not be resumed with the new synthetic data.
+Backfill and audit commands requesting missing measurements need the market data
+and evaluator. They are distinct from saved-data plotting.

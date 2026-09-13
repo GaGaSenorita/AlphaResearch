@@ -41,7 +41,14 @@ class History:
         expression: str = "",
         round_id: int = 0,
     ) -> None:
-        row = {c: float(v) for c, v in zip(self.feature_cols, np.asarray(feature, dtype=float))}
+        vector = np.asarray(feature, dtype=float)
+        if vector.shape != (self.dim,) or not np.isfinite(vector).all():
+            raise ValueError(f"history requires a finite fingerprint of shape ({self.dim},)")
+        if not np.isfinite(float(score)):
+            raise ValueError("history requires a verified finite score")
+        if canonical in self.canonical_forms():
+            raise ValueError(f"history already contains canonical formula {canonical!r}")
+        row = {c: float(v) for c, v in zip(self.feature_cols, vector)}
         row["score"] = float(score)
         row["canonical"] = canonical
         row["expression"] = expression

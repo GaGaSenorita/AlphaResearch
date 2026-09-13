@@ -35,3 +35,16 @@ service as part of a deliberate deployment.
 After applying, `git -C external/AlphaBench status --short` will correctly show
 the two modified vendor files. Keep the submodule revision pinned; do not commit
 the patched tree as an unrelated upstream revision.
+
+## Source-only submission ZIP
+
+The packaged dependency contains pristine files from the pinned upstream revision,
+plus `.upstream-source.json` recording file hashes. No Git metadata, live caches or
+local credentials are included. The runtime verifies this manifest when the
+directory has no own `.git`; the same checksummed integrity patch can then be
+applied using the setup command above. Only the documented patched hashes are
+accepted in place of the corresponding pristine files.
+
+The pinned upstream `pyproject.toml` declares MIT licensing but the upstream tree
+does not contain a standalone LICENSE file. The export preserves its original
+metadata and attribution without inventing additional licence text.

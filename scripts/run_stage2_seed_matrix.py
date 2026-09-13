@@ -3,7 +3,8 @@
 
 The launcher runs the two seeds for one method as a pair, then advances to the
 next method. Each experiment retains its configured internal LLM proposal
-parallelism. Completed 38-round summaries are detected and skipped.
+parallelism. Completed annual 38-round summaries are detected and skipped.
+Results and launcher logs are written outside the submission repository.
 """
 
 from __future__ import annotations
@@ -23,7 +24,8 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-LOG_DIR = REPO_ROOT / "runtime" / "logs" / "stage2_seed_matrix"
+RESULTS_ROOT = REPO_ROOT.parent / "AlphaResearch_local_results" / "stage2"
+LOG_DIR = RESULTS_ROOT / "logs" / "seed_matrix"
 STATUS_PATH = LOG_DIR / "status.json"
 STATUS_LOCK = threading.RLock()
 
@@ -46,7 +48,7 @@ class Job:
                 "neolink-technologies-deepseek-v4-flash_2016-2025"
             ),
         }[self.method]
-        return REPO_ROOT / "runs" / self.method / f"{stem}_seed{self.seed}"
+        return RESULTS_ROOT / self.method / f"{stem}_seed{self.seed}"
 
     @property
     def label(self) -> str:
@@ -85,9 +87,14 @@ def completed(job: Job) -> bool:
     except (OSError, json.JSONDecodeError):
         return False
     protocol = payload.get("protocol") or {}
-    return payload.get("status") == "completed" and int(
-        protocol.get("search_rounds", -1)
-    ) == 38
+    split = (protocol.get("metadata") or {}).get("ldm", {}).get("split_reward", {})
+    return (
+        split.get("segmentation") == "calendar_year"
+        and split.get("years") == [str(year) for year in range(2016, 2021)]
+        and split.get("aggregation") == "minimum_of_yearly_mean_signed_rankic"
+        and payload.get("status") == "completed"
+        and protocol.get("search_rounds") == 38
+    )
 
 
 def process_alive(pid: int) -> bool:

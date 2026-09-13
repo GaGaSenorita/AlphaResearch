@@ -74,12 +74,14 @@ def _kwargs(path, evaluator):
                 random_seed=123, gp_min_fit_data=1000)
 
 
-@pytest.fixture
-def legacy(tmp_path):
+def _legacy_run(tmp_path, **options):
     path = tmp_path / "old"
     path.mkdir()
     events = []
-    result = AlphaLDM(**_kwargs(path, _Evaluator())).search(
+    arguments = _kwargs(path, _Evaluator())
+    arguments.update(options)
+    method = AlphaLDM(**arguments)
+    result = method.search(
         train_period=TRAIN, rounds=3,
         seed_factors=(FactorCandidate("SEED", "$close", source="seed"),),
         event_sink=events.append,
@@ -87,7 +89,7 @@ def legacy(tmp_path):
     protocol = dict(environment="static", train=TRAIN.to_dict(), validation=VAL.to_dict(),
                     test=TEST.to_dict(), objective="rank_ic", max_correlation=None,
                     factor_budget=30, search_rounds=3,
-                    metadata={"method": "ldm", "ffo": {}, "ldm": {},
+                    metadata={"method": "ldm", "ffo": {}, "ldm": {"gp": dict(method.gp_kwargs)},
                               "llm": {"base_url": "https://api.deepseek.com/v1",
                                       "model": "deepseek-v4-pro"}})
     write_json(path / "protocol.json", protocol)
@@ -100,6 +102,11 @@ def legacy(tmp_path):
     for event in events:
         append_jsonl(path / "events.jsonl", event)
     return path, protocol, result, events
+
+
+@pytest.fixture
+def legacy(tmp_path):
+    return _legacy_run(tmp_path)
 
 
 def _destination(tmp_path, legacy, **overrides):
@@ -127,6 +134,7 @@ def test_migration_preserves_every_factor_and_replays_rng(tmp_path, legacy):
     assert state["round_id"] == 5
     manifest = json.loads((method.output_dir / "legacy_import.json").read_text())
     assert manifest["sampler_choices_verified"] == 3
+    assert manifest["gp_compatibility"]["compatibility_basis"] == "no_hyperparameter_training_verified"
     full = AlphaLDM(**_kwargs(tmp_path / "full", _Evaluator())).search(
         train_period=TRAIN, rounds=5,
         seed_factors=(FactorCandidate("SEED", "$close", source="seed"),),
@@ -184,3 +192,56 @@ def test_backfilled_checkpoint_uses_only_then_available_factors(tmp_path, legacy
         assert checkpoint["available_factor_count"] == checkpoint["checkpoint_round"] + 1
         assert all(r["candidate"]["round_id"] <= checkpoint["checkpoint_round"]
                    for r in checkpoint["selected_top5_validation_order"])
+
+
+@pytest.mark.parametrize("source_policy", [None, "likelihood_only_warm_start_v1"])
+def test_trained_legacy_import_rejects_missing_or_old_fit_policy_without_writing(tmp_path, source_policy):
+    legacy = _legacy_run(tmp_path, gp_min_fit_data=1, gp_train_iters=3)
+    source, protocol, _, events = legacy
+    assert any(row.get("gp_trained") is True for row in events)
+    if source_policy is not None:
+        protocol["metadata"]["ldm"]["gp"]["fit_policy"] = source_policy
+        write_json(source / "protocol.json", protocol)
+    before = {name: _digest(source / name) for name in SOURCE_FILES}
+    method = _destination(tmp_path, legacy, gp_min_fit_data=1, gp_train_iters=3)
+    with pytest.raises(ValueError, match="legacy GP fit policy"):
+        method.search(train_period=TRAIN, rounds=5)
+    assert not method.ledger_path.exists()
+    assert not (method.output_dir / "resume_state.json").exists()
+    assert before == {name: _digest(source / name) for name in SOURCE_FILES}
+
+
+def test_matching_trained_fit_policy_imports_with_explicit_provenance(tmp_path):
+    legacy = _legacy_run(tmp_path, gp_min_fit_data=1, gp_train_iters=3)
+    source, protocol, old, _ = legacy
+    method = _destination(tmp_path, legacy, gp_min_fit_data=1, gp_train_iters=3)
+    policy = method._signature(TRAIN)["gp_fit_policy"]
+    protocol["metadata"]["ldm"]["gp"]["fit_policy"] = policy
+    write_json(source / "protocol.json", protocol)
+    resumed = method.search(train_period=TRAIN, rounds=5)
+    assert resumed.archive[:len(old.archive)] == old.archive
+    manifest = json.loads((method.output_dir / "legacy_import.json").read_text())
+    assert manifest["gp_compatibility"] == {
+        "source_fit_policy": policy,
+        "destination_fit_policy": policy,
+        "compatibility_basis": "matching_explicit_fit_policy",
+    }
+    commits = [json.loads(row) for row in method.ledger_path.read_text().splitlines()]
+    assert all(row["source_gp_compatibility"] == manifest["gp_compatibility"]
+               for row in commits if row.get("record_type") == "round_commit" and row.get("origin") == "legacy_import")
+
+
+def test_missing_training_flags_cannot_bypass_legacy_policy_guard(tmp_path, legacy):
+    source, _, _, events = legacy
+    for row in events:
+        row.pop("gp_trained", None)
+    (source / "events.jsonl").write_text("".join(json.dumps(row) + "\n" for row in events))
+    with pytest.raises(ValueError, match="legacy GP fit policy"):
+        _destination(tmp_path, legacy).search(train_period=TRAIN, rounds=5)
+
+
+def test_untrained_import_allows_new_metadata_policy_without_changing_gp_settings(tmp_path, legacy):
+    expected = deepcopy(legacy[1])
+    method = _destination(tmp_path, legacy, legacy_expected_protocol=expected)
+    expected["metadata"]["ldm"]["gp"]["fit_policy"] = method._signature(TRAIN)["gp_fit_policy"]
+    assert len(method.search(train_period=TRAIN, rounds=5).archive) == 6

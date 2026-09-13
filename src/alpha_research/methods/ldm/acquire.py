@@ -30,10 +30,12 @@ def ei(mean: np.ndarray, std: np.ndarray, best: float, xi: float = 0.01) -> np.n
 
 
 def acquisition_values(
-    mean: np.ndarray, std: np.ndarray, mode: str = "ucb", beta: float = 2.0, xi: float = 0.01
+    mean: np.ndarray, std: np.ndarray, mode: str = "ucb", beta: float = 2.0,
+    xi: float = 0.01, best: float | None = None,
 ) -> np.ndarray:
     if mode == "ei":
-        best = float(np.max(mean))
+        if best is None:
+            raise ValueError("EI requires the best observed score, not a candidate prediction")
         return ei(mean, std, best, xi)
     return ucb(mean, std, beta)
 

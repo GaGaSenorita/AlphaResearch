@@ -1,0 +1,28 @@
+{
+  "market": "csi300",
+  "label_expression": "Ref($close, -1)/$close - 1",
+  "start": "2016-01-01",
+  "end": "2025-12-26",
+  "groups": 10,
+  "splits": {
+    "train": ["2016-01-01", "2020-12-29"],
+    "validation": ["2021-01-01", "2021-12-29"],
+    "test": ["2022-01-01", "2025-12-26"]
+  },
+  "factors": [
+    {
+      "name": "VOL_ADJ_UPPER_SHADOW",
+      "title": "Volatility-adjusted upper shadow",
+      "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+      "provenance": "Seed 123, round 38, 100-round discovery archive; thesis section 4.6.",
+      "expected_rank_ic": {"train": 0.04414990317572492, "validation": 0.05313152805266665, "test": 0.04843811082577804}
+    },
+    {
+      "name": "INTRADAY_DRAWDOWN_VOLUME",
+      "title": "Volume-conditioned closing location",
+      "expression": "(($low - $close) / ($close + 1e-12)) * ($volume / (Mean($volume, 20) + 1e-12))",
+      "provenance": "Earlier seed-42 run, round 34; distinct from the 100-round seed-42 archive; thesis section 4.6.",
+      "expected_rank_ic": {"train": 0.0634, "validation": 0.0480, "test": 0.0546}
+    }
+  ]
+}

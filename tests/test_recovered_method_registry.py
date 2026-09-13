@@ -14,8 +14,8 @@ from alpha_research.methods.ldm_rankic_rankicir_ehvi import RankICRankICIREHVILD
 from alpha_research.methods.ldm_rankic_turnover_ehvi import RankICTurnoverEHVILDM
 from alpha_research.methods.ldm_rankic_worst_qehvi import RankICWorstQEHVIAlphaLDM
 from alpha_research.methods.ldm_single_factor import SingleFactorLDM
-from alpha_research.methods.ldm_split_robust_reward import SplitRobustLDM, SplitSettings
-from alpha_research.methods.split_robust import split_score
+from alpha_research.methods.ldm_split_robust_reward import SplitRobustLDM
+from alpha_research.methods.split_robust import SplitSettings, split_score
 from alpha_research.types import EvaluationMetrics, EvaluationResult, Period
 
 
@@ -56,19 +56,17 @@ def test_mock_generator_resume_advances_proposal_sequence() -> None:
     assert generator.calls == 2
 
 
-def _twenty_quarter_result(
+def _five_year_result(
     overrides: dict[str, tuple[float, float]] | None = None,
 ) -> EvaluationResult:
     overrides = overrides or {}
     rows = []
     for year in range(2016, 2021):
-        for quarter, month in enumerate((1, 4, 7, 10), start=1):
-            label = f"{year}Q{quarter}"
-            values = overrides.get(label, (0.20, 0.20))
-            rows.extend(
-                {"date": f"{year}-{month:02d}-{day:02d}", "rank_ic": value}
-                for day, value in enumerate(values, start=10)
-            )
+        values = overrides.get(str(year), (0.20, 0.20))
+        rows.extend(
+            {"date": f"{year}-01-{day:02d}", "rank_ic": value}
+            for day, value in enumerate(values, start=10)
+        )
     return EvaluationResult(
         success=True,
         expression="$close",
@@ -78,42 +76,37 @@ def _twenty_quarter_result(
     )
 
 
-def test_split_reward_is_minimum_of_twenty_quarter_means_not_daily_minimum() -> None:
-    result = _twenty_quarter_result(
-        {"2018Q2": (-0.80, 1.00), "2019Q3": (0.05, 0.05)}
-    )
+def test_split_reward_is_minimum_of_five_year_means_not_daily_minimum() -> None:
+    result = _five_year_result({"2018": (-0.80, 1.00), "2019": (0.05, 0.05)})
     score = split_score(result, SplitSettings())
-
-    assert len(score.quarters) == 20
+    assert len(score.years) == 5
     assert score.train_rankic == pytest.approx(0.123)
-    assert dict(zip(score.quarters, score.quarterly_rankic))["2018Q2"] == pytest.approx(0.10)
+    assert dict(zip(score.years, score.yearly_rankic))["2018"] == pytest.approx(0.10)
     assert score.worst_rankic == pytest.approx(0.05)
     assert score.score == pytest.approx(0.05)
-    assert score.worst_quarter == "2019Q3"
+    assert score.worst_year == "2019"
 
 
-def test_split_reward_keeps_signed_quarter_means_without_per_quarter_flip() -> None:
-    score = split_score(
-        _twenty_quarter_result({"2017Q4": (-0.04, -0.02)}), SplitSettings()
-    )
+def test_split_reward_keeps_signed_year_means_without_per_year_flip() -> None:
+    score = split_score(_five_year_result({"2017": (-0.04, -0.02)}), SplitSettings())
     assert score.score == pytest.approx(-0.03)
-    assert score.worst_quarter == "2017Q4"
+    assert score.worst_year == "2017"
 
 
-def test_split_reward_rejects_an_incomplete_twenty_quarter_series() -> None:
-    result = _twenty_quarter_result()
+def test_split_reward_rejects_an_incomplete_five_year_series() -> None:
+    result = _five_year_result()
     incomplete = SimpleNamespace(
         daily_metrics=tuple(
-            row for row in result.daily_metrics if not str(row["date"]).startswith("2020-10")
+            row for row in result.daily_metrics if not str(row["date"]).startswith("2020")
         ),
         metrics=result.metrics,
     )
     score = split_score(incomplete, SplitSettings())
-    assert score.rejected == "missing finite daily rank_ic for: 2020Q4"
+    assert score.rejected == "missing finite daily rank_ic for: 2020"
     assert math.isinf(score.score) and score.score < 0
 
 
-def test_split_history_keeps_one_scalar_observation_and_all_quarters(tmp_path) -> None:
+def test_split_history_keeps_one_scalar_observation_and_all_years(tmp_path) -> None:
     method = SplitRobustLDM(
         evaluator=SimpleNamespace(),
         profiler=SimpleNamespace(),
@@ -123,8 +116,9 @@ def test_split_history_keeps_one_scalar_observation_and_all_quarters(tmp_path) -
         search_objective="worst_rankic",
     )
     history = method._new_history(dim=12, schema_version="test")
-    result = _twenty_quarter_result({"2019Q3": (0.05, 0.05)})
+    result = _five_year_result({"2019": (0.05, 0.05)})
     score = method._score(result)
+    assert score == pytest.approx(0.05)
     method._record_observation(
         history,
         feature=[0.0] * 12,
@@ -138,6 +132,25 @@ def test_split_history_keeps_one_scalar_observation_and_all_quarters(tmp_path) -
 
     assert history.n == 1
     stored = (tmp_path / "ldm_history.csv").read_text(encoding="utf-8")
-    assert "train_rankic,worst_rankic,worst_quarter,quarterly_rankic" in stored
-    assert "rankic_2016Q1" in stored
-    assert "rankic_2020Q4" in stored
+    assert "train_rankic,worst_rankic,worst_year,yearly_rankic" in stored
+    assert "rankic_2016" in stored
+    assert "rankic_2020" in stored
+    assert "days_2016" in stored
+    assert "quarter" not in stored
+    method._write_split_history()
+    audit = (tmp_path / "split_reward_history.csv").read_text(encoding="utf-8")
+    assert "worst_year" in audit
+    assert "rankic_2016,rankic_2017,rankic_2018,rankic_2019,rankic_2020" in audit
+
+
+@pytest.mark.parametrize(
+    "method,segmentation",
+    [
+        ("ldm_split_robust_reward", "calendar_year"),
+        ("ldm_rankic_worst_qehvi", "calendar_year"),
+    ],
+)
+def test_runner_routes_both_stage2_methods_to_annual_train_partition(method, segmentation):
+    from alpha_research.runner import split_settings
+
+    assert split_settings(SimpleNamespace(method=method)).to_dict()["segmentation"] == segmentation

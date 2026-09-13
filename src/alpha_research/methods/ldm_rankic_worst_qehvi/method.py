@@ -1,9 +1,9 @@
-"""AlphaLDM MOBO over average and worst-quarter Train RankIC.
+"""AlphaLDM MOBO over average and worst-year Train RankIC.
 
 The two objectives are computed from one full 2016--2020 Train evaluation:
 
     J_avg(f)   = mean of every valid daily signed RankIC
-    J_worst(f) = min over 20 calendar-quarter mean signed RankIC values
+    J_worst(f) = min over five calendar-year mean signed RankIC values
 
 They are never collapsed into a weighted scalar.  One independent GP is fitted
 per objective and each eight-candidate proposal slate is searched exactly over
@@ -36,12 +36,16 @@ from alpha_research.methods.ldm.multi_objective import (
     q_expected_hypervolume_improvement_2d,
 )
 from alpha_research.methods.ldm_split_robust_reward.method import (
-    FIXED_COLUMNS,
-    QUARTER_DAYS_PREFIX,
-    QUARTER_VALUE_PREFIX,
-    QuarterlyWorstHistory,
+    YEAR_FIXED_COLUMNS,
+    YEAR_DAYS_PREFIX,
+    YEAR_VALUE_PREFIX,
+    YearlyWorstHistory,
 )
 from alpha_research.methods.split_robust.reward import SplitScore, SplitSettings, split_score
+from alpha_research.methods.split_robust.contract import (
+    validate_annual_output,
+    validate_train_years,
+)
 from alpha_research.types import EvaluationResult, FactorCandidate, SearchResult
 
 
@@ -88,11 +92,11 @@ class FixedObjectiveNormalizer:
         }
 
 
-class RankICWorstHistory(QuarterlyWorstHistory):
-    """One row per factor, with both outputs and quarter-level provenance."""
+class RankICWorstHistory(YearlyWorstHistory):
+    """One row per factor, with both outputs and year-level provenance."""
 
-    def __init__(self, dim: int, schema_version: str, quarters: tuple[str, ...]) -> None:
-        super().__init__(dim=dim, schema_version=schema_version, quarters=quarters)
+    def __init__(self, dim: int, schema_version: str, years: tuple[str, ...]) -> None:
+        super().__init__(dim=dim, schema_version=schema_version, years=years)
         self._df["pareto_nondominated"] = False
 
     def add_objectives(
@@ -258,15 +262,15 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         if cached is not None and cached[0] is result:
             return cached[1]
         outcome = split_score(result, self.split_settings)
-        if outcome.quarterly_rankic and outcome.usable_days:
-            # Define J_avg from the same signed daily series as the quarter
-            # objective.  Weighting quarter means by their valid-day counts is
+        if outcome.yearly_rankic and outcome.usable_days:
+            # Define J_avg from the same signed daily series as the year
+            # objective.  Weighting year means by their valid-day counts is
             # exactly the mean over all valid Train days and avoids depending
             # on a separately reported aggregate field.
             train_rankic = math.fsum(
                 value * days
                 for value, days in zip(
-                    outcome.quarterly_rankic, outcome.quarter_days
+                    outcome.yearly_rankic, outcome.year_days
                 )
             ) / outcome.usable_days
             outcome = replace(outcome, train_rankic=float(train_rankic))
@@ -282,7 +286,7 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         return float(outcome.train_rankic)
 
     def _new_history(self, *, dim: int, schema_version: str) -> RankICWorstHistory:
-        history = RankICWorstHistory(dim, schema_version, self.split_settings.quarters)
+        history = RankICWorstHistory(dim, schema_version, self.split_settings.years)
         self._history = history
         return history
 
@@ -337,15 +341,15 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
             "score": outcome.train_rankic,
             "train_rankic": outcome.train_rankic,
             "worst_rankic": outcome.worst_rankic,
-            "worst_quarter": outcome.worst_quarter,
+            "worst_year": outcome.worst_year,
             "usable_days": outcome.usable_days,
             "rejected": outcome.rejected or "",
         }
-        for quarter, value, days in zip(
-            outcome.quarters, outcome.quarterly_rankic, outcome.quarter_days
+        for year, value, days in zip(
+            outcome.years, outcome.yearly_rankic, outcome.year_days
         ):
-            row[f"{QUARTER_VALUE_PREFIX}{quarter}"] = value
-            row[f"{QUARTER_DAYS_PREFIX}{quarter}"] = days
+            row[f"{YEAR_VALUE_PREFIX}{year}"] = value
+            row[f"{YEAR_DAYS_PREFIX}{year}"] = days
         self._split_records.append(row)
 
     def _evaluated_record(
@@ -364,11 +368,11 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
                 "train_rankic": outcome.train_rankic,
                 "worst_rankic": outcome.worst_rankic,
             },
-            "worst_quarter": outcome.worst_quarter,
+            "worst_year": outcome.worst_year,
         }
 
     def _generator_objective(self) -> str:
-        return "joint Train RankIC and worst-quarter RankIC Pareto improvement"
+        return "joint Train RankIC and worst-year RankIC Pareto improvement"
 
     def _generator_best(
         self,
@@ -549,15 +553,8 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         }
 
     def search(self, **kwargs: Any) -> SearchResult:
-        train_period = kwargs.get("train_period")
-        if train_period is None or (
-            train_period.start.year != self.split_settings.start_year
-            or train_period.end.year != self.split_settings.end_year
-        ):
-            raise ValueError(
-                "ldm_rankic_worst_qehvi requires a Train period contained in "
-                "calendar years 2016--2020"
-            )
+        validate_train_years(kwargs.get("train_period"), self.split_settings)
+        validate_annual_output(self.output_dir)
         self._split_records = []
         self._outcome_cache = {}
         result: SearchResult | None = None
@@ -590,9 +587,9 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         }
         records: list[dict[str, Any]] = []
         for row_index, (_, row) in enumerate(frame.iterrows()):
-            quarterly = {
-                quarter: float(row[f"{QUARTER_VALUE_PREFIX}{quarter}"])
-                for quarter in self.split_settings.quarters
+            yearly = {
+                year: float(row[f"{YEAR_VALUE_PREFIX}{year}"])
+                for year in self.split_settings.years
             }
             records.append(
                 {
@@ -602,8 +599,12 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
                     "round_id": int(row["round_id"]),
                     "train_rankic": float(row["train_rankic"]),
                     "worst_rankic": float(row["worst_rankic"]),
-                    "worst_quarter": str(row["worst_quarter"]),
-                    "quarterly_rankic": quarterly,
+                    "worst_year": str(row["worst_year"]),
+                    "yearly_rankic": yearly,
+                    "year_days": {
+                        year: int(row[f"{YEAR_DAYS_PREFIX}{year}"])
+                        for year in self.split_settings.years
+                    },
                     "pareto_nondominated": bool(mask[row_index]),
                 }
             )
@@ -615,7 +616,8 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         write_json(
             self.output_dir / "pareto_archive.json",
             {
-                "schema_version": "alphaldm.rankic_worst_qehvi.v1",
+                "schema_version": "alphaldm.rankic_worst_qehvi.annual.v2",
+                "split_reward": self.split_settings.to_dict(),
                 "objectives": list(OBJECTIVES),
                 "directions": ["maximize", "maximize"],
                 "observation_count": self._history.n,
@@ -626,7 +628,8 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
         write_json(
             self.output_dir / "mobo_state.json",
             {
-                "schema_version": "alphaldm.rankic_worst_qehvi.v1",
+                "schema_version": "alphaldm.rankic_worst_qehvi.annual.v2",
+                "split_reward": self.split_settings.to_dict(),
                 "status": "complete" if result is not None else "partial",
                 "objectives": list(OBJECTIVES),
                 "directions": ["maximize", "maximize"],
@@ -652,10 +655,10 @@ class RankICWorstQEHVIAlphaLDM(AlphaLDM):
     def _write_split_history(self) -> None:
         if not self._split_records:
             return
-        quarters = self.split_settings.quarters
-        columns = list(FIXED_COLUMNS)
-        columns += [f"{QUARTER_VALUE_PREFIX}{quarter}" for quarter in quarters]
-        columns += [f"{QUARTER_DAYS_PREFIX}{quarter}" for quarter in quarters]
+        years = self.split_settings.years
+        columns = list(YEAR_FIXED_COLUMNS)
+        columns += [f"{YEAR_VALUE_PREFIX}{year}" for year in years]
+        columns += [f"{YEAR_DAYS_PREFIX}{year}" for year in years]
         path = self.output_dir / "split_reward_history.csv"
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("w", encoding="utf-8", newline="") as handle:

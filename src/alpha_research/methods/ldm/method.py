@@ -344,6 +344,7 @@ class AlphaLDM:
                 mode=self.acquisition,
                 beta=self.acquisition_beta,
                 xi=self.acquisition_xi,
+                best=history.best_score() if history.n else 0.0,
             )
             if self.diversity_weight:
                 spread = float(np.std(values))
@@ -451,9 +452,12 @@ class AlphaLDM:
             if seed_factors
             else load_alpha158_seeds(self.alphabench_root, seed_group=self.seed_group)
         )
-        seed_results = self.evaluator.evaluate_many(seeds, train_period)
+        seed_results = tuple(self.evaluator.evaluate_many(seeds, train_period))
+        if len(seed_results) != len(seeds):
+            raise RuntimeError("seed evaluator returned a different number of results than formulas")
         seed_failures: list[str] = []
         for candidate, result in zip(seeds, seed_results):
+            self._verify_result_identity(candidate.expression, result, train_period)
             emit({
                 "event": "train_evaluation",
                 "cycle_id": cycle_id,
@@ -546,6 +550,14 @@ class AlphaLDM:
 
         return best, best_result, best_score
 
+    @staticmethod
+    def _verify_result_identity(
+        expression: str, result: EvaluationResult, period: Period,
+    ) -> None:
+        """Never attach a cached result for another formula/window to a candidate."""
+        if result.period != period or _safe_canonical(result.expression) != _safe_canonical(expression):
+            raise RuntimeError("evaluator result does not match the requested formula and period")
+
     # ------------------------------------------------------------------ search
 
     def search(
@@ -563,6 +575,11 @@ class AlphaLDM:
                 "AlphaLDM is currently wired only for StaticEnvironment; "
                 "rolling feedback adaptation is intentionally not implemented"
             )
+        profile_period = getattr(self.profiler, "period", None)
+        if profile_period is not None and not (
+            train_period.start <= profile_period.start <= profile_period.end <= train_period.end
+        ):
+            raise ValueError("the profiling window must be contained within the training period")
         emit = event_sink or (lambda _event: None)
         target_rounds = max(0, int(rounds))
         schema = self.profiler.schema
@@ -808,6 +825,7 @@ class AlphaLDM:
                     )
                     started = time.monotonic()
                     result = self.evaluator.evaluate(candidate.expression, train_period)
+                    self._verify_result_identity(candidate.expression, result, train_period)
                     evaluate_seconds += time.monotonic() - started
 
                     emit({

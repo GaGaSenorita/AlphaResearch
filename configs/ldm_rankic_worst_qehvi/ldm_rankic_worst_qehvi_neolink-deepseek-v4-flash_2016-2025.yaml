@@ -5,10 +5,11 @@ mode: real
 description: >
   Stage 2 Method 2 on CSI300 using the Yangtze AI Lab LiteLLM gateway and
   DeepSeek V4 Flash. One full 2016-2020 Train evaluation supplies both full
-  Train RankIC and the minimum of 20 calendar-quarter mean signed RankICs.
+  Train RankIC and the minimum of five calendar-year mean signed RankICs.
   Two independent GPs and exact finite-slate Monte Carlo qEHVI optimise both
   objectives without scalarisation.
 args:
+  out-dir: "{repo_root}/../AlphaResearch_local_results/stage2/{method}/{run_name}"
   alphabench-root: "{repo_root}/external/AlphaBench"
   qlib-provider-uri: "{repo_root}/../quantaalpha_qlib_csi300/cn_data"
   ffo-url: http://127.0.0.1:19777

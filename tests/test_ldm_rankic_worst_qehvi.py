@@ -24,25 +24,25 @@ from alpha_research.types import EvaluationMetrics, EvaluationResult, FactorCand
 
 
 def _outcome(train_rankic: float, worst_rankic: float, index: int = 0) -> SplitScore:
-    quarters = SplitSettings().quarters
-    values = [worst_rankic + 0.01] * len(quarters)
-    values[index % len(quarters)] = worst_rankic
+    years = SplitSettings().years
+    values = [worst_rankic + 0.01] * len(years)
+    values[index % len(years)] = worst_rankic
     return SplitScore(
         score=worst_rankic,
-        quarters=quarters,
-        quarterly_rankic=tuple(values),
-        quarter_days=(50,) * len(quarters),
+        years=years,
+        yearly_rankic=tuple(values),
+        year_days=(50,) * len(years),
         train_rankic=train_rankic,
         worst_rankic=worst_rankic,
-        worst_quarter=quarters[index % len(quarters)],
-        usable_days=1000,
+        worst_year=years[index % len(years)],
+        usable_days=250,
         settings=SplitSettings().to_dict(),
     )
 
 
 def _history() -> RankICWorstHistory:
     rng = np.random.default_rng(5)
-    history = RankICWorstHistory(12, "test-schema", SplitSettings().quarters)
+    history = RankICWorstHistory(12, "test-schema", SplitSettings().years)
     for index in range(42):
         history.add_objectives(
             rng.normal(size=12),
@@ -152,21 +152,16 @@ def test_method_selects_three_from_eight_with_true_batch_qehvi(tmp_path) -> None
     assert np.asarray(decision["diagnostics"]["posterior_mean_worst_rankic"]).shape == (8,)
 
 
-def test_one_full_train_result_produces_two_outputs_and_twenty_quarters() -> None:
+def test_one_full_train_result_produces_two_outputs_and_five_years() -> None:
     rows = []
     values = []
     for year in range(2016, 2021):
-        for quarter, month in enumerate((1, 4, 7, 10), start=1):
-            value = 0.01 + (year - 2016) * 0.002 + quarter * 0.001
-            if year == 2018 and quarter == 3:
-                value = -0.025
-            values.extend((value, value + 0.002))
-            rows.extend(
-                (
-                    {"date": f"{year}-{month:02d}-10", "rank_ic": value},
-                    {"date": f"{year}-{month:02d}-11", "rank_ic": value + 0.002},
-                )
-            )
+        year_values = [-0.03, -0.018] if year == 2018 else [0.01] * (year - 2014)
+        values.extend(year_values)
+        rows.extend(
+            {"date": f"{year}-01-{day:02d}", "rank_ic": value}
+            for day, value in enumerate(year_values, start=10)
+        )
     result = EvaluationResult(
         success=True,
         expression="Div(Delta($close,5),Add(Std($close,20),1e-12))",
@@ -177,9 +172,9 @@ def test_one_full_train_result_produces_two_outputs_and_twenty_quarters() -> Non
     outcome = split_score(result, SplitSettings())
 
     assert outcome.train_rankic == pytest.approx(np.mean(values))
-    assert len(outcome.quarterly_rankic) == 20
+    assert len(outcome.yearly_rankic) == 5
     assert outcome.worst_rankic == pytest.approx(-0.024)
-    assert outcome.worst_quarter == "2018Q3"
+    assert outcome.worst_year == "2018"
 
     method = RankICWorstQEHVIAlphaLDM(
         evaluator=None,
@@ -263,11 +258,10 @@ def _evaluation(expression: str, period: Period) -> EvaluationResult:
     number = int(re.findall(r"\d+", expression)[-1])
     rows = []
     for year in range(2016, 2021):
-        for quarter, month in enumerate((1, 4, 7, 10), start=1):
-            value = 0.005 + (number % 17) * 0.001 + quarter * 0.0002
-            if quarter == (number % 4) + 1:
-                value -= 0.02
-            rows.append({"date": f"{year}-{month:02d}-10", "rank_ic": value})
+        value = 0.005 + (number % 17) * 0.001 + (year - 2016) * 0.0002
+        if year == 2016 + (number % 5):
+            value -= 0.02
+        rows.append({"date": f"{year}-01-10", "rank_ic": value})
     train_rankic = float(np.mean([row["rank_ic"] for row in rows]))
     return EvaluationResult(
         success=True,
@@ -325,6 +319,13 @@ def test_full_one_round_loop_keeps_42_warmup_rows_and_adds_one_batch(tmp_path) -
     history_lines = (tmp_path / "ldm_history.csv").read_text().splitlines()
     assert len(history_lines) == 46  # header + 42 warm-up + one q=3 batch
     state = json.loads((tmp_path / "mobo_state.json").read_text())
+    assert state["split_reward"]["segmentation"] == "calendar_year"
+    assert state["schema_version"] == "alphaldm.rankic_worst_qehvi.annual.v2"
+    assert all(set(row["yearly_rankic"]) == set(SplitSettings().years)
+               for row in state["all_observations"])
+    assert all(set(row["year_days"]) == set(SplitSettings().years)
+               for row in state["all_observations"])
+    assert "quarter" not in (tmp_path / "ldm_history.csv").read_text()
     assert state["observation_count"] == 45
     assert state["normalization"]["observation_count"] == 42
     batch_event = next(event for event in events if event["event"] == "ldm_batch_acquisition")

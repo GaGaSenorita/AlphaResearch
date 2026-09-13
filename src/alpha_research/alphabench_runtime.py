@@ -6,9 +6,10 @@ import importlib
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
 from .types import FactorCandidate
@@ -16,10 +17,72 @@ from .types import FactorCandidate
 
 PINNED_COMMIT = "31bb94bbb7744177c51c9d011e07c31e3092b93e"
 INTEGRATION_DIR = Path(__file__).resolve().parents[2] / "integrations" / "alphabench"
+SOURCE_EXPORT_MARKER = ".upstream-source.json"
+
+
+def _export_revision(root: Path) -> str:
+    """Verify the checksum manifest supplied with the Git-free source export."""
+    marker = root / SOURCE_EXPORT_MARKER
+    if marker.is_symlink() or not marker.is_file():
+        raise RuntimeError(
+            "AlphaBench has no own .git metadata or verified source-export marker"
+        )
+    try:
+        metadata = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("Invalid AlphaBench source-export marker") from exc
+    if not isinstance(metadata, dict) or metadata.get("upstream_commit") != PINNED_COMMIT:
+        raise RuntimeError("AlphaBench source export differs from the pinned upstream commit")
+    files = metadata.get("files")
+    if not isinstance(files, dict) or not files:
+        raise RuntimeError("AlphaBench source export has no file checksums")
+    integration = json.loads((INTEGRATION_DIR / "manifest.json").read_text(encoding="utf-8"))
+    required = {
+        "searcher/algo/cot.py",
+        "factors/lib/alpha158/qlib_compile_product.json",
+        "ffo/client/factor_eval_client.py",
+        *integration["files"],
+    }
+    if not required.issubset(files):
+        raise RuntimeError("AlphaBench source-export marker omits required upstream files")
+    for name, expected in files.items():
+        if not isinstance(name, str):
+            raise RuntimeError("Invalid path in AlphaBench source-export marker")
+        relative = PurePosixPath(name)
+        if (
+            not name or relative.is_absolute() or str(relative) != name
+            or "\\" in name or ".." in relative.parts or ".git" in relative.parts
+            or name == SOURCE_EXPORT_MARKER
+        ):
+            raise RuntimeError(f"Unsafe path in AlphaBench source-export marker: {name!r}")
+        target = root
+        for part in relative.parts:
+            target /= part
+            if target.is_symlink():
+                raise RuntimeError(f"Symlinked AlphaBench source-export path: {name}")
+        if not target.is_file() or not target.resolve().is_relative_to(root):
+            raise RuntimeError(f"Missing or unsafe AlphaBench source-export file: {name}")
+        if not isinstance(expected, str) or re.fullmatch(r"[0-9a-f]{64}", expected) is None:
+            raise RuntimeError(f"Invalid AlphaBench source-export checksum: {name}")
+        allowed = {expected}
+        if name in integration["files"]:
+            hashes = integration["files"][name]
+            if expected != hashes["upstream_sha256"]:
+                raise RuntimeError(f"AlphaBench source-export upstream checksum mismatch: {name}")
+            allowed.add(hashes["patched_sha256"])
+        if hashlib.sha256(target.read_bytes()).hexdigest() not in allowed:
+            raise RuntimeError(f"AlphaBench source-export checksum mismatch: {name}")
+    return PINNED_COMMIT
 
 
 def checkout_revision(root: Path) -> str:
-    """Resolve both ordinary Git checkouts and submodule/worktree .git files."""
+    """Resolve a Git checkout or verify its explicit, checksummed source export.
+
+    Never discover a parent repository's revision for an exported directory.
+    """
+    root = Path(root).expanduser().resolve()
+    if not (root / ".git").exists() and not (root / ".git").is_symlink():
+        return _export_revision(root)
     result = subprocess.run(
         ["git", "-C", str(root), "rev-parse", "HEAD"],
         capture_output=True, text=True, check=True,
@@ -65,8 +128,8 @@ def configure_verified_evaluator(
     state = states.pop()
     if state == "patched" or not apply:
         return state
-    subprocess.run(["git", "-C", str(root), "apply", "--check", str(patch)], check=True)
-    subprocess.run(["git", "-C", str(root), "apply", str(patch)], check=True)
+    subprocess.run(["git", "-C", str(root), "apply", "--no-index", "--check", str(patch)], check=True)
+    subprocess.run(["git", "-C", str(root), "apply", "--no-index", str(patch)], check=True)
     return configure_verified_evaluator(root, integration_dir=integration_dir)
 
 

@@ -709,7 +709,7 @@ class AlphaBenchFFOEvaluator:
 class MockFactorEvaluator:
     """Deterministic synthetic weekday metrics, never real market measurements.
 
-    Cover the requested period with ISO dates so quarterly objectives exercise
+    Cover the requested period with ISO dates so annual objectives exercise
     the same aggregation contract. Weekdays are not an exchange calendar.
     """
 

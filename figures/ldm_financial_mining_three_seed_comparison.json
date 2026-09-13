@@ -1118,8 +1118,6 @@
   "train_factor_annotations_displayed": false,
   "raw_test_curves_displayed": false,
   "outputs": {
-    "png": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.png",
-    "svg": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.svg",
     "pdf": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.pdf",
     "metadata": "/Users/senorita/Desktop/Alpha Mining Report/AlphaResearch/figures/ldm_financial_mining_three_seed_comparison.json"
   }

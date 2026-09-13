@@ -134,6 +134,17 @@ class LdmSurrogate:
                 f"feature dimension {features.shape[1]} does not match surrogate "
                 f"dimension {self.feature_dim}; the profile schema changed"
             )
+        if scores.ndim != 1 or len(scores) != len(features) or not len(scores):
+            raise ValueError("GP fit requires one score per feature row and a nonempty history")
+        if not np.isfinite(features).all() or not np.isfinite(scores).all():
+            raise ValueError("GP fit requires finite features and verified finite scores")
+
+        # Every fit reconstructs the GP from the complete observation history.
+        # Reset its likelihood too: retaining only the learned noise parameter
+        # made predictions depend on how many prior fits happened in this
+        # process, so a resumed run differed from an uninterrupted run.
+        self._likelihood = gpytorch.likelihoods.GaussianLikelihood().to(dtype=_TORCH_DTYPE)
+        self._likelihood.initialize(noise=self.noise**2)
 
         self._feature_mean = features.mean(axis=0)
         spread = features.std(axis=0)
@@ -157,7 +168,7 @@ class LdmSurrogate:
         model = _FeatureGP(
             train_x, train_y, self._likelihood, self.feature_dim, self.fitted_lengthscale, self.scale
         )
-        if len(scores) > self.min_fit_data and self.train_iters > 0:
+        if len(scores) >= self.min_fit_data and self.train_iters > 0:
             mll = gpytorch.mlls.ExactMarginalLogLikelihood(self._likelihood, model)
             opt = torch.optim.Adam(model.parameters(), lr=self.lr)
             model.train()

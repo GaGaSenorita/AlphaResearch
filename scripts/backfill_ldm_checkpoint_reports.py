@@ -149,7 +149,7 @@ def backfill_one(
 
         plot_metadata = draw_financial_trajectory(
             run_dir,
-            run_dir / "figure",
+            REPO_ROOT / "figures" / f"ldm_financial_mining_seed{seed}_round{completed_round}",
             seed=seed,
         )
     return {

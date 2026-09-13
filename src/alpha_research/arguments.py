@@ -28,9 +28,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "ldm_single_factor is ldm_standard with the pool readout removed: the same "
             "search, delivering the single best factor on validation. "
             "ldm_split_robust_reward is ldm_standard with the reward replaced by the "
-            "worst of 20 calendar-quarter mean signed RankIC values on Train. "
+            "worst of five calendar-year mean signed RankIC values on Train. "
             "ldm_rankic_worst_qehvi uses independent GPs and true batch qEHVI to "
-            "maximise Train RankIC and worst-quarter RankIC in the Pareto sense. "
+            "maximise Train RankIC and worst-year RankIC in the Pareto sense. "
             "ldm_rankic_rankicir_ehvi fits independent RankIC and RankICIR GPs and "
             "acquires candidates by two-objective expected hypervolume improvement. "
             "ldm_rankic_turnover_ehvi applies the same EHVI search to maximise RankIC "
@@ -357,7 +357,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help=(
             "Optional result directory. Its leaf must follow "
-            "method_llm_YYYY-YYYY_seedN; omitted uses runs/<method>/<standard-name>."
+            "method_llm_YYYY-YYYY_seedN; omitted uses runs/<method>/<standard-name>, "
+            "or ../AlphaResearch_local_results/stage2/<method>/<standard-name> "
+            "for the two Stage-2 methods."
         ),
     )
     parser.add_argument("--mock", action="store_true")

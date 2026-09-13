@@ -1,0 +1,160 @@
+{
+  "config": {
+    "market": "csi300",
+    "label_expression": "Ref($close, -1)/$close - 1",
+    "start": "2016-01-01",
+    "end": "2025-12-26",
+    "groups": 10,
+    "splits": {
+      "train": [
+        "2016-01-01",
+        "2020-12-29"
+      ],
+      "validation": [
+        "2021-01-01",
+        "2021-12-29"
+      ],
+      "test": [
+        "2022-01-01",
+        "2025-12-26"
+      ]
+    },
+    "factors": [
+      {
+        "name": "VOL_ADJ_UPPER_SHADOW",
+        "title": "Volatility-adjusted upper shadow",
+        "expression": "(($high - $close) / ($high - $low + 1e-12)) / (Std($close / Ref($close, 1) - 1, 20) + 1e-12)",
+        "provenance": "Seed 123, round 38, 100-round discovery archive; thesis section 4.6.",
+        "expected_rank_ic": {
+          "train": 0.04414990317572492,
+          "validation": 0.05313152805266665,
+          "test": 0.04843811082577804
+        }
+      },
+      {
+        "name": "INTRADAY_DRAWDOWN_VOLUME",
+        "title": "Volume-conditioned closing location",
+        "expression": "(($low - $close) / ($close + 1e-12)) * ($volume / (Mean($volume, 20) + 1e-12))",
+        "provenance": "Earlier seed-42 run, round 34; distinct from the 100-round seed-42 archive; thesis section 4.6.",
+        "expected_rank_ic": {
+          "train": 0.0634,
+          "validation": 0.048,
+          "test": 0.0546
+        }
+      }
+    ]
+  },
+  "provider": "/Users/senorita/Desktop/Alpha Mining Report/quantaalpha_qlib_csi300/cn_data",
+  "qlib_version": "0.9.7",
+  "fee_rate": 0,
+  "long_short": "daily return = G10 - G1; +100% long, -100% short; daily compounding",
+  "timing": "Signal at t close; label C[t+1]/C[t]-1; NAV plotted at t+1. Not an executable backtest.",
+  "sorting": "Ascending valid-pair factor values; ties broken by instrument ID; equal weights; no factor sign reversal.",
+  "full_period": "Continuous calendar, including days between formal evaluation splits.",
+  "provider_file_sha256": {
+    "calendars/day.txt": "40199c53de84bbb038acda9cffe5965aac9993010d26d38ecda5eb94cd7167d5",
+    "instruments/csi300.txt": "6ad88100d9f6e7b77ef707c209933d8e0d1ceb7a65b1d98b7304bfc9e507e98f"
+  },
+  "factors": {
+    "VOL_ADJ_UPPER_SHADOW": {
+      "skipped_dates": [],
+      "daily_count": 2427,
+      "split_metrics": {
+        "train": {
+          "rank_ic": 0.04414990317572492,
+          "valid_ic_days": 1216,
+          "daily_spread_mean": 0.0009513980191138372,
+          "min_valid_pairs": 273
+        },
+        "validation": {
+          "rank_ic": 0.05313152805266665,
+          "valid_ic_days": 241,
+          "daily_spread_mean": 0.0015444360033445219,
+          "min_valid_pairs": 297
+        },
+        "test": {
+          "rank_ic": 0.04843811082577804,
+          "valid_ic_days": 966,
+          "daily_spread_mean": 0.001000527264474556,
+          "min_valid_pairs": 296
+        }
+      },
+      "full_terminal_nav": {
+        "Group-1": 0.1651309067549369,
+        "Group-2": 0.700750940369335,
+        "Group-3": 1.0332513050864611,
+        "Group-4": 1.807878129117184,
+        "Group-5": 2.5800766405410123,
+        "Group-6": 1.9229081926699085,
+        "Group-7": 2.6875666162483056,
+        "Group-8": 1.5400241270021195,
+        "Group-9": 1.2568059322643084,
+        "Group-10": 2.2159595465990445,
+        "Long-Short": 10.28865513205095
+      },
+      "test_terminal_nav": {
+        "Group-1": 0.5705910723468286,
+        "Group-2": 0.8877741323430719,
+        "Group-3": 0.9033863327595167,
+        "Group-4": 1.2642334824551498,
+        "Group-5": 1.1059974534444579,
+        "Group-6": 1.118109471825965,
+        "Group-7": 1.062665673474133,
+        "Group-8": 1.0784280814322769,
+        "Group-9": 1.039858939659967,
+        "Group-10": 1.5734273439198057,
+        "Long-Short": 2.4426375446030613
+      }
+    },
+    "INTRADAY_DRAWDOWN_VOLUME": {
+      "skipped_dates": [],
+      "daily_count": 2427,
+      "split_metrics": {
+        "train": {
+          "rank_ic": 0.06340397786035083,
+          "valid_ic_days": 1216,
+          "daily_spread_mean": 0.0005421981899915133,
+          "min_valid_pairs": 274
+        },
+        "validation": {
+          "rank_ic": 0.04802110890330065,
+          "valid_ic_days": 241,
+          "daily_spread_mean": 0.001182807348874325,
+          "min_valid_pairs": 297
+        },
+        "test": {
+          "rank_ic": 0.05460392339375167,
+          "valid_ic_days": 966,
+          "daily_spread_mean": 0.0009243148888330165,
+          "min_valid_pairs": 296
+        }
+      },
+      "full_terminal_nav": {
+        "Group-1": 0.2570130780918179,
+        "Group-2": 0.4467411742918954,
+        "Group-3": 0.624573932819942,
+        "Group-4": 2.1720547619640445,
+        "Group-5": 2.4972858497977413,
+        "Group-6": 1.5154941706942804,
+        "Group-7": 2.1342050032454716,
+        "Group-8": 2.1473849506360856,
+        "Group-9": 2.209875097345128,
+        "Group-10": 1.8216084778826782,
+        "Long-Short": 5.121088030136352
+      },
+      "test_terminal_nav": {
+        "Group-1": 0.6197171586886172,
+        "Group-2": 0.6986431742081761,
+        "Group-3": 0.6718246537281968,
+        "Group-4": 0.9903594381475092,
+        "Group-5": 1.2744301963362137,
+        "Group-6": 1.0991368656706186,
+        "Group-7": 1.1756336359281871,
+        "Group-8": 1.2328799993307635,
+        "Group-9": 1.439405360508476,
+        "Group-10": 1.619231254135332,
+        "Long-Short": 2.235201455532762
+      }
+    }
+  }
+}

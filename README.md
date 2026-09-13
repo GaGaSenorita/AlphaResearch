@@ -1,114 +1,124 @@
 # AlphaResearch / AlphaLDM
 
-AlphaLDM searches for formulaic financial factors using LLM proposals, a
-label-free 12D representation, Gaussian-process surrogates and verified external
-evaluation. This repository contains the research implementation and preserved
-experiment results. Recovery provenance is documented in [docs/RECOVERY.md](docs/RECOVERY.md).
+AlphaLDM adapts the Large Discovery Model framework to formulaic alpha mining.
+It combines LLM proposals, label-free behavioural representations, Gaussian-process
+surrogates and externally verified factor evaluation.
 
-## One repository, two branches
+This submission preserves all research method implementations, configurations and
+tests. The experiment data on `main` are the three pure LDM runs and their derived
+factor library and figures. Stage II results remain local-only; both Stage II
+methods now use **calendar-year** training splits.
 
-- `main`: research methods, experiment configurations, saved results and figures.
-- `AlphaLDM_API`: FastAPI backend and mock/online dashboard.
+## Methods
 
-Use **one `AlphaResearch` directory**. Switch with `git switch main` or
-`git switch AlphaLDM_API`; no second checkout is needed. Stop workers and the API
-server before switching, and commit or stash local edits first. Ignored local
-environments and `runtime/` records remain on disk. API installation and startup
-instructions live on the API branch; `main` does not serve the dashboard.
+| Research role | Method | Search objective |
+| --- | --- | --- |
+| Pure LDM | `ldm_standard` | Mean daily signed training RankIC; GP/UCB selection |
+| Resumable pure LDM | `ldm_continuous_discovery` | Same objective, with verified round commits |
+| Stage II Method 1 | `ldm_split_robust_reward` | Minimum yearly mean training RankIC |
+| Stage II Method 2 | `ldm_rankic_worst_qehvi` | Joint mean training RankIC and worst-year RankIC; batch qEHVI |
 
-## Install
+Baseline Alpha158, AlphaBench CoT, cold-start, single-factor, prompt-harness,
+RankIC/RankICIR and RankIC/turnover variants remain available. See the complete
+[method map](docs/ARCHITECTURE.md). Code availability does not imply a completed
+experiment for every variant.
 
-The dependency source is `pyproject.toml`; `environment.yml` installs it into the
-Conda environment `AlphaResearch` rather than duplicating a requirements list.
-Python 3.11 is the prepared local runtime.
+## Installation
+
+Use Python 3.11 and run commands from this directory. For a Git clone:
 
 ```bash
 git submodule update --init --recursive
-conda env create -f environment.yml
-conda activate AlphaResearch
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev,ffo]' -e external/AlphaBench
 python scripts/setup_alphabench.py --apply
 ```
 
-For an existing environment, use `conda env update -f environment.yml`.
-Alternatively install with `pip install -e '.[dev,ffo]' -e external/AlphaBench`.
-The setup command verifies the pinned AlphaBench revision and installs only the
-audited integrity patch. It refuses to overwrite local changes. Running it
-without `--apply` only inspects the integration.
+Keep the editable (`-e`) installation: commands locate bundled configurations,
+integrations and saved results relative to the source directory.
 
-Real evaluation additionally needs the Qlib CSI300 data provider and an FFO
-service. Real proposal generation needs `ALPHARESEARCH_LLM_API_KEY` in the
-environment. Neither market data nor credentials are included in Git.
-See [local setup](docs/LOCAL_MAC_SETUP.md) and
-[the evaluator integration](integrations/alphabench/README.md).
+The submission ZIP includes pinned AlphaBench source, so omit the `git submodule`
+command when using it. The integration checker supports Git checkouts and
+checksummed source exports. See [the integration guide](integrations/alphabench/README.md)
+for attribution and patch details.
 
-## Entry points
+Alternatively use `conda env create -f environment.yml`. Tested direct dependency
+versions are recorded in [docs/TESTED_ENVIRONMENT.md](docs/TESTED_ENVIRONMENT.md).
+
+## Verify without API calls or market data
 
 ```bash
 alpha-research --list
-alpha-research configs/ldm_continuous_discovery/ldm_continuous_discovery_neolink-deepseek-v4-flash_2016-2025.yaml --dry-run
+MPLBACKEND=Agg python -m pytest -q
+python scripts/run_experiment.py configs/smoke/ldm_continuous_discovery_mock_2016-2025.yaml
 ```
 
-`python -m alpha_research.cli` and `python scripts/run_experiment.py` expose
-the same configuration-first entry point. `--dry-run` validates the protocol
-and paths without running an experiment or calling the LLM.
+The smoke configuration uses synthetic generation, profiling and evaluation.
+It writes to ignored `runtime/smoke/` and is a software check, not a financial
+experiment. Re-running it resumes the same completed smoke run.
 
-On the prepared Mac, start real continual discovery with
-`bash scripts/run_local_continuous_discovery.sh 100 42`. The first argument is
-the cumulative target, not the number of additional rounds. Only committed
-rounds are resumable; an exported result snapshot alone is not a complete
-executable checkpoint.
+To inspect a real configuration without starting an experiment:
 
-To redraw the saved three-seed results without data, an evaluator or API calls:
+```bash
+alpha-research configs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025.yaml --dry-run
+```
+
+Real runs additionally need a Qlib CSI300 provider, a running AlphaBench FFO
+service and the API-key environment variable specified in the chosen config.
+Market data and credentials are excluded. Set `args.qlib-provider-uri` and
+`args.ffo-url` for your installation; see [experiments](docs/EXPERIMENTS.md) and
+[optional macOS setup](docs/LOCAL_MAC_SETUP.md). Real generation incurs API usage.
+
+## Reproduce the saved LDM figures
 
 ```bash
 python scripts/render_ldm_report_figures.py
+python scripts/render_stage1_thesis_figures.py
+python scripts/plot_representative_factor_nav.py
 ```
 
-## Project layout
+These commands read preserved records or daily CSVs without calling the LLM or
+factor evaluator. Each plot has one canonical **PDF** in `figures/`; JSON/CSV
+preserve inputs and provenance. Use `--format png` or `--format svg` for an
+optional local export. See the [NAV guide](docs/REPRESENTATIVE_FACTOR_NAV.md).
+
+## Data and interpretation
+
+Train alone guides generation, surrogate fitting and acquisition. Validation
+selects factors and checks correlation; test data evaluate the fixed combination.
+Test values never feed back into search. Displayed test best-so-far curves are
+explicitly retrospective, not deployable selection rules.
+
+The preserved LDM runs have 342 factors each: 42 initial factors plus 100 rounds
+of three evaluations, for seeds 42, 123 and 456. Recorded measurements are unchanged.
+These are reporting snapshots, not complete executable checkpoints under the
+revised integrity checks; see [provenance](docs/RECOVERY.md).
+
+Stage II outputs default to `../AlphaResearch_local_results/stage2/`. Old quarterly
+records are separate from annual runs and must not be relabelled as annual
+experiments. See [data organisation](docs/DATA_LAYOUT.md).
+
+## Layout and submission
 
 ```text
-configs/                 Experiment configurations; canonical names are stable
-src/alpha_research/
-  cli.py, arguments.py   Config expansion and experiment option contract
-  runner.py             Component construction and experiment orchestration
-  environments/         Evaluation protocols
-  methods/              AlphaLDM, baselines and research variants
-  evaluator.py          Verified evaluation and result validation
-  profile.py            Label-free behavioural representation
-  reporting/            Saved-data extraction and scientific plotting
-scripts/                 Launch, reporting, audit and setup entry points
-integrations/alphabench/ Pinned, checksummed FFO patch (no duplicate vendor code)
-external/AlphaBench/     Official Git submodule
-runs/                    Preserved evidence and local experiment outputs
-figures/                 Exported scientific figures
-tests/                   Automated correctness and regression checks
-docs/                    Setup, methods, architecture and provenance
+configs/                  Method configurations and mock smoke test
+src/alpha_research/        Search, evaluation, profiling and reporting
+scripts/                  Experiment, plotting, audit and packaging tools
+tests/                    Correctness and regression tests
+integrations/alphabench/   Pinned evaluator patch and checksums
+external/AlphaBench/      Third-party submodule or verified source export
+runs/ldm_continuous_discovery/  Preserved pure LDM evidence
+figures/                  Canonical PDFs and their data/provenance
+docs/                     Architecture and reproducibility
 ```
 
-`runtime/` and local environments are ignored and are not source modules.
-Existing runtime jobs and recovered results should not be removed as build
-artifacts. `runs/` keeps the original method/model/period/seed naming scheme.
+Runtime files, environments and local results are excluded from Git and the
+submission archive. The separate `AlphaLDM_API` branch contains dashboard work
+and is not required for this research submission.
 
-## Research methods and scientific boundaries
-
-The principal configurations are continuous scalar-UCB AlphaLDM,
-`ldm_split_robust_reward` (worst quarterly Train RankIC), and
-`ldm_rankic_worst_qehvi` (Train RankIC–worst-quarter batch qEHVI).
-Baselines and configured ablations remain available; see
-[the method map](docs/ARCHITECTURE.md) and [experiment guide](docs/EXPERIMENTS.md).
-
-Train guides search. Validation selects and filters factors for reporting.
-Test is report-only and never feeds into either process. The displayed Test
-best-so-far envelope is explicitly retrospective, with the raw measured
-checkpoints retained. Preserved R100 runs have the complete R0/R5/.../R100
-reporting grid; a new run follows its chosen configuration, not the figure grid.
-
-## Verify
+Build a source-and-evidence archive without Git history or local runtime files:
 
 ```bash
-MPLBACKEND=Agg pytest -q
+python scripts/package_submission.py --output ../AlphaResearch_submission.zip
 ```
-
-Tests use synthetic evaluations and preserved records, not paid LLM calls.
-They cover verified results, round continuation, quarterly rewards, MOBO,
-configurations, patch safety and five-round scientific reporting.

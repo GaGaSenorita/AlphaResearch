@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Any
 
@@ -71,6 +72,9 @@ class StaticEnvironment:
         self.run_metadata = dict(run_metadata or {})
 
     def run(self) -> dict[str, Any]:
+        validate_output = getattr(self.method, "validate_output_directory", None)
+        if callable(validate_output):
+            validate_output()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         events_path = self.output_dir / "events.jsonl"
         preserve_events = bool(getattr(self.method, "preserve_existing_events", False))
@@ -129,7 +133,7 @@ class StaticEnvironment:
         )
         write_json(self.output_dir / "validation_selection.json", selection.to_dict())
         test_individual = []
-        individual_results = self.evaluator.evaluate_many(selection.selected, self.protocol.test)
+        individual_results = tuple(self.evaluator.evaluate_many(selection.selected, self.protocol.test))
         for candidate, result in zip(selection.selected, individual_results):
             record = {"candidate": candidate.to_dict(), "test": result.to_dict()}
             test_individual.append(record)
@@ -141,6 +145,23 @@ class StaticEnvironment:
             "selected": [candidate.to_dict() for candidate in selection.selected],
             "result": test_pool.to_dict(),
         })
+        failures = [
+            result.error or f"missing finite {self.protocol.objective} for {result.expression}"
+            for result in (*individual_results, test_pool)
+            if not result.success or not math.isfinite(result.metrics.value(self.protocol.objective))
+        ]
+        if len(individual_results) != len(selection.selected):
+            failures.append("test evaluator returned a different number of results than selected factors")
+        if failures:
+            emit({"event": "test_reporting_failed", "cycle_id": "static", "errors": failures})
+            write_json(self.output_dir / "summary.json", {
+                "status": "failed",
+                "environment": "static",
+                "protocol": protocol_payload,
+                "method": self.method.name,
+                "errors": failures,
+            })
+            raise RuntimeError("test reporting is incomplete: " + " | ".join(failures))
 
         artifacts = {
             "events": str(events_path),

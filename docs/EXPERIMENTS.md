@@ -1,127 +1,93 @@
 # Experiment and reporting guide
 
-Commands below are run from the repository root after installation. Search
-commands use paid LLM calls unless `args.mock=true` is explicitly set.
+Run from the repository root after installation. Real search calls the configured
+LLM; use the dedicated smoke config for a fully synthetic, offline check.
 
-## Continuous discovery artifacts
-
-Each run writes:
-
-- `factor_ledger.jsonl`: append-only factor evaluations and round commits;
-- `resume_state.json`: last safe round, RNG state, search signature, and GP size;
-- `factor_sequence.json`: every saved factor in real evaluation order;
-- `top5_combinations.json`: configured checkpoint Validation Top-5 and measured
-  Test audits (the preserved R100 runs include the complete R0/R5/.../R100 grid);
-- `events.jsonl`, `search.json`, `validation_selection.json`, and `summary.json`.
-
-Use `scripts/run_local_continuous_discovery.sh TARGET_ROUNDS SEED` on macOS,
-or invoke `alpha-research CONFIG --set args.ldm-random-seed=SEED` directly.
-The deleted 5350-host launchers are not required for continuation; the verified
-legacy import implementation remains in `methods/ldm_continuous_discovery/legacy.py`.
-
-## Stage 2 Method 1: worst-quarter Train objective
-
-`ldm_split_robust_reward` keeps the standard AlphaLDM proposal, 12D profile,
-GP, kernel, acquisition, and evaluation budget. Its only search change is the
-scalar GP target: one full 2016--2020 Train evaluation is grouped into the 20
-calendar quarters, and `worst_rankic` is the minimum quarterly mean signed
-RankIC. The run saves `train_rankic`, `worst_rankic`, `worst_quarter`, and all
-20 quarterly values in `ldm_history.csv` and `split_reward_history.csv`.
-
-## Stage 2 Method 2: RankIC-Worst qEHVI
-
-`ldm_rankic_worst_qehvi` reuses Method 1's exact 20-quarter aggregation and
-maximises `(train_rankic, worst_rankic)` in the Pareto sense. It fits two
-independent GPs on the existing 12D factor representation. Per-objective
-z-score normalisation and the dominated reference point are frozen from the 42
-initial Alpha158 observations. With the default 8-proposal/3-evaluation round,
-all 56 candidate triples are scored by Monte Carlo qEHVI using each GP's joint
-candidate covariance, and the best triple is evaluated.
-
-The 38-round DeepSeek Flash config is:
+## Pure LDM
 
 ```bash
-python scripts/run_experiment.py \
-  configs/ldm_rankic_worst_qehvi/ldm_rankic_worst_qehvi_neolink-deepseek-v4-flash_2016-2025.yaml
+python scripts/run_experiment.py configs/ldm_continuous_discovery/ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025.yaml --dry-run
 ```
 
-In addition to the standard artifacts, a run writes `pareto_archive.json` and
-`mobo_state.json`; these record the raw objectives, all quarterly RankICs,
-current Pareto membership, frozen normalisation/reference point, and final
-normalised hypervolume. Validation retains the standard RankIC Top-30 selection
-under the 0.8 daily-RankIC correlation boundary, and Test remains report-only.
+Remove `--dry-run` only when real evaluation and generation are intended. Override
+settings with `--set args.NAME=VALUE`, for example
+`--set args.qlib-provider-uri=/path/to/cn_data` or
+`--set args.llm-api-key-env=MY_LLM_API_KEY`. Credentials themselves stay in the
+environment, never in command arguments or YAML.
 
-To backfill the denser R0/R5/.../R100 reporting schedule from preserved factor
-sequences without rerunning discovery or calling the LLM, start the real FFO
-evaluator and run:
+`search-rounds` is the cumulative target for continuous discovery. New runs use
+canonical method/model/period/seed names. Use a new seed or output parent for a
+new experiment. Exact continuation requires the matching committed factor ledger,
+RNG state, configuration and profiling identity; a saved result snapshot alone is
+insufficient. The current integrity checks reject incompatible old signatures.
+
+A continuous run records `factor_ledger.jsonl`, `resume_state.json`,
+`factor_sequence.json`, `top5_combinations.json`, protocol, events and summaries.
+Only verified training observations update search; configured Validation/test
+reports remain outside the search history. An incomplete round is not committed.
+
+## Stage II: annual training splits
+
+Both methods partition the full Train evaluation into five calendar years,
+2016 through 2020. Let each year's score be its mean daily signed RankIC.
+Method 1 optimises the minimum of those five means. Method 2 optimises that
+minimum jointly with the full-Train mean, which weights valid days equally rather
+than giving equal weight to years with different numbers of observations.
+
+Missing or invalid yearly observations fail evaluation; rewards are not sign-
+flipped or replaced with zero. Both methods retain the standard behaviour map and
+verified evaluation path. Method 2 fits two independent GPs and uses frozen
+initial-objective normalisation/reference points with Monte Carlo batch qEHVI.
 
 ```bash
-python scripts/backfill_ldm_checkpoint_reports.py --seeds 42 123 456
+python scripts/run_experiment.py configs/ldm_split_robust_reward/ldm_split_robust_reward_deepseek-v4-pro_2016-2025.yaml --dry-run
+python scripts/run_experiment.py configs/ldm_rankic_worst_qehvi/ldm_rankic_worst_qehvi_neolink-deepseek-v4-flash_2016-2025.yaml --dry-run
+python scripts/run_stage2_seed_matrix.py --help
 ```
 
-Use `--dry-run` first to list missing checkpoints. Backfill evaluates and
-selects on Validation, audits the frozen Top-5 on Test, writes a separate
-`checkpoint_backfill_events.jsonl`, and never changes search state.
+The configs retain their explicit provider/model settings; a controlled comparison
+must align these settings as well as budgets and seeds. Do not infer a matched
+comparison solely from method names.
 
-The three preserved R100 runs already contain all 21 five-round checkpoints.
-To redraw the three individual Train/Test figures, their copies inside each
-run, and the combined comparison, no evaluator, market data or API key is needed:
+Results default to `../AlphaResearch_local_results/stage2/<method>/<run_name>`.
+They are excluded from the research submission. Historical quarterly outputs are
+archived separately and refused as annual output destinations. An annual summary
+of an old daily series does not turn a quarterly-guided search into an annual run.
+
+Each run records annual reward history, yearly valid-day counts and protocol
+metadata. Method 2 also writes `pareto_archive.json` and `mobo_state.json` using
+the annual schema. Validation selection uses signed mean RankIC and the configured
+correlation/combination rules; test results never guide either method.
+
+## Saved-data plotting
 
 ```bash
 python scripts/render_ldm_report_figures.py
+python scripts/render_stage1_thesis_figures.py
+python scripts/plot_representative_factor_nav.py
 ```
 
-All four figures are saved as PNG, SVG, PDF and JSON under `figures/`. Train
-leaders and measured Validation-selected Top-5 Test pools are sampled at
-R0/R5/.../R100. Individual figures retain the raw Test audits alongside their
-explicitly retrospective best-so-far envelope; the combined figure shows the
-three envelopes and preserves the raw measurements in its JSON. No Test points
-are interpolated or fed back into discovery. Off-grid legacy reports such as
-R38 remain in the run archive but are excluded from the regular plotted grid.
+One PDF per figure is written under `figures/`, with JSON/CSV provenance. The
+preserved R100 runs have all 21 measured checkpoints R0/R5/.../R100. Plotters reject
+missing/non-finite points; they neither interpolate results nor select checkpoints
+using test performance. The plotted best-so-far envelope is explicitly retrospective.
 
-## Single-factor library
+## Additional measurements and factor library
 
-Build a cross-seed library of LDM-generated factors whose Train RankIC is at
-least 0.04:
+The commands below may request real evaluation. Review their `--dry-run` plans
+first; they do not call the LLM or rerun discovery:
 
 ```bash
-python scripts/build_single_factor_library.py --seeds 42 123 456
-```
-
-The complete candidate table and the strict Validation-admitted view are
-written under `runs/ldm_continuous_discovery/factor_library/`.  Formula,
-explanation, seed, round and original evaluation index are retained, and
-canonical expressions are de-duplicated across seeds.  A high Train value only
-creates a candidate; Validation RankIC >= 0.04 is required for admission. Test
-is audit-only and never changes library membership.
-
-If restored market data and the FFO service are available, evaluate only the
-currently missing candidate Validation results (no LLM and no search rerun):
-
-```bash
+python scripts/backfill_ldm_checkpoint_reports.py --dry-run
 python scripts/backfill_single_factor_validation.py --dry-run
-python scripts/backfill_single_factor_validation.py
-```
-
-The append-only Validation ledger makes this job safely resumable.
-
-To measure every Train-qualified candidate on Test for a one-time descriptive
-audit, without changing formal library admission, run:
-
-```bash
 python scripts/audit_single_factor_test.py --dry-run
-python scripts/audit_single_factor_test.py
 ```
 
-This writes a separate append-only Test ledger and
-`test_audit_over_threshold.*`.  These files are retrospective analysis only;
-they must not be presented as Validation-selected performance.
+`python scripts/build_single_factor_library.py` only reads saved records. Train
+RankIC >= 0.04 creates a candidate, and Validation RankIC >= 0.04 is required for
+library admission. Test audits never change membership. Full tables and the
+Validation-admitted view remain in the preserved LDM factor library.
 
-## Preserved R100 experiments
-
-The completed continual-discovery result snapshots for seeds 42, 123, and 456
-are versioned with this repository under `runs/ldm_continuous_discovery/`, using
-the same canonical run names as the original GPU experiments. Each run directory
-contains its ordered factor sequence, resume state, checkpoint Top-5
-Validation/Test reports, and PNG/SVG/PDF figure. See the run directory's README
-and `results_summary.json` for a compact index.
+`reanalyse_validation_worst_year_topk.py` is an explicitly post-hoc analysis tool.
+With Validation restricted to the single year 2021, its worst-year and mean scores
+are identical; it cannot supply an additional temporal-robustness criterion.

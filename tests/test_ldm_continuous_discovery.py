@@ -190,3 +190,106 @@ def test_negative_checkpoint_round_is_rejected(tmp_path):
             resume=True,
             checkpoint_rounds=(-1, 0, 10),
         )
+
+
+def test_trained_ucb_resume_matches_uninterrupted_posteriors_and_choices(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    seeds = (FactorCandidate("CLOSE", "$close"), FactorCandidate("OPEN", "$open"))
+
+    def method(path):
+        value = _method(path, _Evaluator(), resume=True)
+        value.acquisition = "ucb"
+        value.gp_kwargs.update(min_fit_data=2, train_iters=3)
+        return value
+
+    full_events = []
+    full = method(tmp_path / "full").search(
+        train_period=train, rounds=3, seed_factors=seeds, event_sink=full_events.append,
+    )
+    method(tmp_path / "split").search(train_period=train, rounds=1, seed_factors=seeds)
+    resumed_events = []
+    resumed = method(tmp_path / "split").search(
+        train_period=train, rounds=3, seed_factors=seeds, event_sink=resumed_events.append,
+    )
+    assert [row[0].expression for row in resumed.archive] == [row[0].expression for row in full.archive]
+    full_rounds = [row for row in full_events if row["event"] == "ldm_round" and row["round_id"] > 1]
+    resumed_rounds = [row for row in resumed_events if row["event"] == "ldm_round"]
+    for actual, expected in zip(resumed_rounds, full_rounds):
+        assert actual["selected_indices"] == expected["selected_indices"]
+        np.testing.assert_allclose(actual["posterior_mean"], expected["posterior_mean"], rtol=1e-12)
+        np.testing.assert_allclose(actual["posterior_std"], expected["posterior_std"], rtol=1e-12)
+
+
+def test_resume_recovers_a_torn_final_commit_and_preserves_its_bytes(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    seed = FactorCandidate("SEED", "$close")
+    original = _method(tmp_path, _Evaluator(), resume=True).search(
+        train_period=train, rounds=2, seed_factors=(seed,),
+    )
+    ledger = tmp_path / "factor_ledger.jsonl"
+    lines = ledger.read_bytes().splitlines(keepends=True)
+    torn_tail = lines[-1][:80]
+    ledger.write_bytes(b"".join(lines[:-1]) + torn_tail)
+    resumed = _method(tmp_path, _Evaluator(), resume=True).search(
+        train_period=train, rounds=2, seed_factors=(seed,),
+    )
+    assert [row[0].expression for row in resumed.archive] == [row[0].expression for row in original.archive]
+    backups = list(tmp_path.glob("factor_ledger.jsonl.incomplete-*"))
+    assert len(backups) == 1 and backups[0].read_bytes() == torn_tail
+    assert json.loads((tmp_path / "resume_state.json").read_text())["round_id"] == 2
+
+
+def test_resume_rejects_tampered_train_scores(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    _method(tmp_path, _Evaluator(), resume=True).search(
+        train_period=train, rounds=1, seed_factors=(FactorCandidate("SEED", "$close"),),
+    )
+    ledger = tmp_path / "factor_ledger.jsonl"
+    rows = [json.loads(line) for line in ledger.read_text().splitlines()]
+    rows[0]["search_score"] = 0.99
+    ledger.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(RuntimeError, match="unverified or misaligned"):
+        _method(tmp_path, _Evaluator(), resume=True).search(train_period=train, rounds=2)
+
+
+def test_resume_signature_includes_profile_window(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    first = _method(tmp_path, _Evaluator(), resume=True)
+    first.profiler.period = Period.from_strings("2019-01-01", "2020-12-29")
+    first.search(train_period=train, rounds=1, seed_factors=(FactorCandidate("SEED", "$close"),))
+    resumed = _method(tmp_path, _Evaluator(), resume=True)
+    resumed.profiler.period = Period.from_strings("2020-01-01", "2020-12-29")
+    with pytest.raises(ValueError, match="signature mismatch in profile"):
+        resumed.search(train_period=train, rounds=2)
+
+
+def test_new_search_cannot_append_to_an_existing_ledger(tmp_path):
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    _method(tmp_path, _Evaluator(), resume=True).search(
+        train_period=train, rounds=1, seed_factors=(FactorCandidate("SEED", "$close"),),
+    )
+    original = (tmp_path / "factor_ledger.jsonl").read_bytes()
+    with pytest.raises(FileExistsError, match="enable resume"):
+        _method(tmp_path, _Evaluator(), resume=False).search(train_period=train, rounds=1)
+    assert (tmp_path / "factor_ledger.jsonl").read_bytes() == original
+
+
+def test_existing_run_guard_precedes_environment_file_writes(tmp_path):
+    from alpha_research.environments.static import StaticEnvironment, StaticProtocol
+
+    train = Period.from_strings("2016-01-01", "2020-12-29")
+    _method(tmp_path, _Evaluator(), resume=True).search(
+        train_period=train, rounds=1, seed_factors=(FactorCandidate("SEED", "$close"),),
+    )
+    (tmp_path / "events.jsonl").write_text("existing events\n")
+    (tmp_path / "protocol.json").write_text("existing protocol\n")
+    method = _method(tmp_path, _Evaluator(), resume=False)
+    environment = StaticEnvironment(
+        protocol=StaticProtocol(train, method.checkpoint_validation_period,
+                                method.checkpoint_test_period, factor_budget=2, search_rounds=1),
+        method=method, evaluator=_Evaluator(), output_dir=tmp_path,
+    )
+    before = {path: path.read_bytes() for path in tmp_path.iterdir() if path.is_file()}
+    with pytest.raises(FileExistsError, match="enable resume"):
+        environment.run()
+    assert all(path.read_bytes() == payload for path, payload in before.items())

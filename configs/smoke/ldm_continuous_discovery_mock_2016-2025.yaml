@@ -1,0 +1,32 @@
+name: ldm_continuous_discovery_mock_2016-2025
+method: ldm_continuous_discovery
+environment: static
+mode: mock
+description: Offline end-to-end software check; no market measurements or LLM calls.
+args:
+  mock: true
+  alphabench-root: "{repo_root}/external/AlphaBench"
+  llm-model: mock
+  train-start: 2016-01-01
+  train-end: 2020-12-29
+  val-start: 2021-01-01
+  val-end: 2021-12-29
+  test-start: 2022-01-01
+  test-end: 2025-12-26
+  profile-start: 2019-01-01
+  profile-end: 2020-12-29
+  objective: rank_ic
+  factor-budget: 2
+  max-correlation: 1.0
+  seed-group: all
+  search-rounds: 2
+  candidates-per-round: 8
+  evaluate-per-round: 3
+  acquisition: ucb
+  gp-min-fit-data: 5
+  gp-train-iters: 5
+  ldm-random-seed: 42
+  continuous-resume: true
+  continuous-checkpoint-round: [0, 1, 2]
+  continuous-checkpoint-factor-budget: 2
+  out-dir: "{repo_root}/runtime/smoke/{run_name}"

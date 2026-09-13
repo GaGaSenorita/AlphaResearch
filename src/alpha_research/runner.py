@@ -84,14 +84,20 @@ def profile_period(args: argparse.Namespace) -> Period:
     fingerprint has to stay cheap relative to an evaluation, and it only needs
     to characterise behaviour, not estimate it precisely.
     """
-    if args.profile_start and args.profile_end:
-        return Period.from_strings(args.profile_start, args.profile_end)
-    train_end = Period.from_strings(args.train_start, args.train_end).end
-    start = train_end.replace(year=train_end.year - 2)
-    return Period.from_strings(
-        max(start, Period.from_strings(args.train_start, args.train_end).start).isoformat(),
-        train_end.isoformat(),
-    )
+    train = Period.from_strings(args.train_start, args.train_end)
+    if bool(args.profile_start) != bool(args.profile_end):
+        raise ValueError("--profile-start and --profile-end must be supplied together")
+    if args.profile_start:
+        profile = Period.from_strings(args.profile_start, args.profile_end)
+        if profile.start < train.start or profile.end > train.end:
+            raise ValueError("profiling period must be contained in Train")
+        return profile
+    try:
+        start = train.end.replace(year=train.end.year - 2)
+    except ValueError:
+        # February 29 has no counterpart in the target non-leap year.
+        start = train.end.replace(year=train.end.year - 2, day=28)
+    return Period(start=max(start, train.start), end=train.end)
 
 
 def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output_dir: Path):
@@ -319,10 +325,11 @@ def build_ldm(args: argparse.Namespace, evaluator, alphabench_root: Path, output
 
 
 def split_settings(args: argparse.Namespace):
-    from alpha_research.methods.ldm_split_robust_reward import SplitSettings
+    from alpha_research.methods.split_robust import YearlySplitSettings
 
-    del args
-    return SplitSettings()
+    if args.method not in {LDM_SPLIT_ROBUST_REWARD, LDM_RANKIC_WORST_QEHVI}:
+        raise ValueError("annual split settings apply only to Stage-2 methods")
+    return YearlySplitSettings()
 
 
 def build_components(args: argparse.Namespace, output_dir: Path):
@@ -418,6 +425,7 @@ def public_metadata(args: argparse.Namespace) -> dict[str, Any]:
             "max_refill_batches": args.ldm_max_refill_batches,
             "gp": {
                 "kernel": "ScaleKernel(Matern nu=2.5, ARD)",
+                "fit_policy": "full_history_deterministic_refit_v2",
                 "min_fit_data": args.gp_min_fit_data,
                 "lengthscale": args.gp_lengthscale,
                 "noise": args.gp_noise,
@@ -677,7 +685,21 @@ def main(argv: list[str] | None = None) -> int:
                 "--out-dir must end with the canonical run name "
                 f"{expected_run_name!r}; got {output_dir.name!r}"
             )
+    if args.out_dir is None and args.method in {
+        LDM_SPLIT_ROBUST_REWARD, LDM_RANKIC_WORST_QEHVI,
+    }:
+        output_dir = (
+            REPO_ROOT.parent / "AlphaResearch_local_results" / "stage2"
+            / args.method / expected_run_name
+        )
     protocol = static_protocol(args)
+    is_stage2 = args.method in {LDM_SPLIT_ROBUST_REWARD, LDM_RANKIC_WORST_QEHVI}
+    if is_stage2:
+        from alpha_research.methods.split_robust.contract import (
+            validate_annual_output, validate_train_years,
+        )
+
+        validate_train_years(protocol.train, split_settings(args))
     if args.dry_run:
         print(json.dumps({
             "status": "dry_run",
@@ -687,6 +709,8 @@ def main(argv: list[str] | None = None) -> int:
         }, indent=2, sort_keys=True))
         return 0
 
+    if is_stage2:
+        validate_annual_output(output_dir)
     evaluator, method = build_components(args, output_dir)
     summary = StaticEnvironment(
         protocol=protocol,

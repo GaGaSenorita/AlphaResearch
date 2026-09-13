@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Sequence
 
@@ -102,6 +103,7 @@ class CandidateGenerator:
         self.max_attempts = max(1, int(max_attempts))
         self.history_shown = max(0, int(history_shown))
         self.calls = 0
+        self._calls_lock = threading.Lock()
 
     # ------------------------------------------------------------- context
 
@@ -181,7 +183,8 @@ class CandidateGenerator:
         chat_failures = 0
         last_chat_error: Exception | None = None
         for _ in range(self.max_attempts):
-            self.calls += 1
+            with self._calls_lock:
+                self.calls += 1
             try:
                 raw = self.client.chat(_SYSTEM_PROMPT, context)
             except Exception as exc:
@@ -251,7 +254,10 @@ class MockCandidateGenerator:
 
     def restore_state(self, *, completed_round: int, llm_calls_total: int) -> None:
         """Restore deterministic mock sequencing without double-counting calls."""
-        self._round = max(0, int(completed_round))
+        del completed_round
+        # A discovery round can require several refill batches. The mock
+        # advances once per generated batch, not once per committed round.
+        self._round = max(0, int(llm_calls_total)) // self.candidates_per_round
         # ``calls`` counts only this process. ContinuousDiscoveryLDM adds the
         # committed total separately when it writes the next checkpoint.
         self.calls = 0

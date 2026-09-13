@@ -13,9 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.parametrize("seed", [42, 123, 456])
-def test_refactored_renderer_preserves_measured_figure_and_metadata(tmp_path, seed):
+def test_renderer_preserves_measurements_and_saves_one_pdf(tmp_path, seed):
     from alpha_research.reporting.financial import draw_financial_trajectory
-    from PIL import Image, ImageChops
 
     run = ROOT / "runs/ldm_continuous_discovery" / (
         f"ldm_continuous_discovery_openai-deepseek-v4-pro_2016-2025_seed{seed}"
@@ -23,12 +22,16 @@ def test_refactored_renderer_preserves_measured_figure_and_metadata(tmp_path, se
     old_prefix = ROOT / "figures" / f"ldm_financial_mining_seed{seed}_round100"
     actual = draw_financial_trajectory(run, tmp_path / "figure", seed=seed)
     expected = PLOT.load_json(old_prefix.with_suffix(".json"))
-    assert {k: v for k, v in actual.items() if k != "outputs"} == {
-        k: v for k, v in expected.items() if k != "outputs"
+    # Source paths relocate with a source export; every plotted measurement and
+    # interpretation flag must still match the preserved report.
+    location_fields = {"outputs", "data_dir"}
+    assert {k: v for k, v in actual.items() if k not in location_fields} == {
+        k: v for k, v in expected.items() if k not in location_fields
     }
-    with Image.open(old_prefix.with_suffix(".png")) as old, Image.open(tmp_path / "figure.png") as new:
-        assert old.size == new.size
-        assert ImageChops.difference(old.convert("RGB"), new.convert("RGB")).getbbox() is None
+    assert actual["data_dir"] == str(run.resolve())
+    assert set(actual["outputs"]) == {"pdf", "metadata"}
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["figure.json", "figure.pdf"]
+    assert (tmp_path / "figure.pdf").read_bytes().startswith(b"%PDF-")
 
 
 def test_retrospective_test_best_so_far_keeps_raw_values_and_source_rounds():
@@ -114,7 +117,6 @@ def test_preserved_five_round_reports_are_complete_and_do_not_rewrite_search(see
     assert entry["train"] == plotted["train_milestones"]
     assert entry["raw_test"] == plotted["measured_top5_test_checkpoints"]
     assert entry["test_best_so_far"] == expected
-    for kind in ("png", "svg", "pdf"):
-        assert (run / f"figure.{kind}").read_bytes() == (
-            root / "figures" / f"ldm_financial_mining_seed{seed}_round100.{kind}"
-        ).read_bytes()
+    assert set(plotted["outputs"]) == {"pdf", "metadata"}
+    assert set(combined["outputs"]) == {"pdf", "metadata"}
+    assert (root / "figures" / f"ldm_financial_mining_seed{seed}_round100.pdf").is_file()

@@ -57,9 +57,18 @@ def validate_protocol(source: dict[str, Any], expected: dict[str, Any]) -> None:
     for key in (
         "search_objective", "profile_schema_version", "profile_window", "profiler",
         "reference_basket", "candidates_per_round", "acquisition", "evaluate_per_round",
-        "max_refill_batches", "gp", "random_seed",
+        "max_refill_batches", "random_seed",
     ):
         _equal(old["ldm"].get(key), new["ldm"].get(key), f"ldm.{key}")
+    # The fit-policy field is checked against the live implementation and the
+    # source's actual training history below. Older runs can lack this field
+    # only when no GP hyperparameter training has occurred.
+    old_gp, new_gp = old["ldm"].get("gp") or {}, new["ldm"].get("gp") or {}
+    _equal(
+        {key: value for key, value in old_gp.items() if key != "fit_policy"},
+        {key: value for key, value in new_gp.items() if key != "fit_policy"},
+        "ldm.gp",
+    )
     for key in ("base_url", "temperature", "max_tokens", "context_window", "reasoning_effort", "thinking_enabled"):
         _equal(old["llm"].get(key), new["llm"].get(key), f"llm.{key}")
     _equal(
@@ -68,6 +77,38 @@ def validate_protocol(source: dict[str, Any], expected: dict[str, Any]) -> None:
         "effective_model",
     )
     # Only duration, method durability/reporting and the deliverable budget may change.
+
+
+def _validate_gp_fit_policy(
+    source: dict[str, Any], events: list[dict[str, Any]], *,
+    observation_count: int, destination_policy: str,
+) -> dict[str, Any]:
+    """Do not turn a historical trained GP into a new-policy exact continuation."""
+    source_gp = source.get("metadata", {}).get("ldm", {}).get("gp") or {}
+    source_policy = source_gp.get("fit_policy")
+    if source_policy == destination_policy:
+        basis = "matching_explicit_fit_policy"
+    else:
+        fit_events = [row for row in events if row.get("event") in {"ldm_warmup", "ldm_round"}]
+        explicitly_untrained = bool(fit_events) and all(row.get("gp_trained") is False for row in fit_events)
+        train_iters = source_gp.get("train_iters")
+        minimum = source_gp.get("min_fit_data")
+        disabled = isinstance(train_iters, (int, float)) and train_iters == 0
+        below_threshold = (
+            isinstance(train_iters, (int, float)) and train_iters > 0
+            and isinstance(minimum, (int, float)) and observation_count < minimum
+        )
+        if not explicitly_untrained or not (disabled or below_threshold):
+            raise ValueError(
+                "legacy GP fit policy is missing or incompatible for a trained or unverifiable GP run; "
+                "historical reports remain usable, but this run cannot be imported as an exact continuation"
+            )
+        basis = "no_hyperparameter_training_verified"
+    return {
+        "source_fit_policy": source_policy,
+        "destination_fit_policy": destination_policy,
+        "compatibility_basis": basis,
+    }
 
 
 def replay_sampler(events: list[dict[str, Any]], *, rounds: int, seed: int,
@@ -152,6 +193,10 @@ def import_legacy_run(method: Any, *, train_period: Any, target_rounds: int) -> 
                          and e["result"]["metrics"].get(method.search_objective) is not None]
     _equal([e["candidate"] for e in successful_events], [a["candidate"] for a in archive], "successful evaluation order")
     signature = method._signature(train_period)
+    gp_compatibility = _validate_gp_fit_policy(
+        protocol, events, observation_count=len(history),
+        destination_policy=signature["gp_fit_policy"],
+    )
     grouped: dict[int, list[dict[str, Any]]] = {r: [] for r in range(completed + 1)}
     for index, (hist, item, event) in enumerate(zip(history, archive, successful_events), 1):
         candidate, result = item["candidate"], item["train"]
@@ -196,6 +241,7 @@ def import_legacy_run(method: Any, *, train_period: Any, target_rounds: int) -> 
             "history_observations": total, "rng_state": states[rid], "signature": signature,
             "origin": "legacy_import", "imported_at_unix": time.time(),
             "rng_state_origin": "replayed_and_verified_against_all_logged_choices",
+            "source_gp_compatibility": gp_compatibility,
         }
         # Per-round LLM call totals were not recorded by the old method. Do not invent them.
         if rid == completed:
@@ -225,6 +271,7 @@ def import_legacy_run(method: Any, *, train_period: Any, target_rounds: int) -> 
         "new_factor_budget": method.checkpoint_factor_budget,
         "history_order_preserved": True, "train_observations_reevaluated": False,
         "validation_imported": len(validation_rows), "source_unchanged": True,
+        "gp_compatibility": gp_compatibility,
         "imported_at_unix": time.time(),
     }
     destination.mkdir(parents=True, exist_ok=True)

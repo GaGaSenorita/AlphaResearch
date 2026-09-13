@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import random
 import time
 from pathlib import Path
@@ -94,6 +95,39 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
             if isinstance(row, dict):
                 rows.append(row)
     return rows
+
+
+def _repair_incomplete_ledger_tail(path: Path) -> None:
+    """Recover only a torn final append, preserving its bytes for inspection.
+
+    Complete malformed lines remain errors. Only the suffix after the last
+    newline can have been interrupted by an append in progress.
+    """
+    if not path.is_file():
+        return
+    with path.open("rb+") as handle:
+        payload = handle.read()
+        if not payload or payload.endswith(b"\n"):
+            return
+        boundary = payload.rfind(b"\n") + 1
+        tail = payload[boundary:]
+        try:
+            json.loads(tail)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            backup = path.with_name(f"{path.name}.incomplete-{time.time_ns()}")
+            with backup.open("xb") as saved:
+                saved.write(tail)
+                saved.flush()
+                os.fsync(saved.fileno())
+            handle.seek(boundary)
+            handle.truncate()
+        else:
+            # A full record can survive just before its newline was written.
+            # Terminate it before the next append, so records cannot concatenate.
+            handle.seek(0, os.SEEK_END)
+            handle.write(b"\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def _select_precomputed(
@@ -183,6 +217,11 @@ class ContinuousDiscoveryLDM(AlphaLDM):
     def preserve_existing_events(self) -> bool:
         return self.resume and self.ledger_path.is_file()
 
+    def validate_output_directory(self) -> None:
+        """Reject a fresh run before the environment can replace existing files."""
+        if self.ledger_path.exists() and not self.resume:
+            raise FileExistsError("continuous ledger already exists; enable resume or choose a new output directory")
+
     def _signature(self, train_period: Period) -> dict[str, Any]:
         schema = self.profiler.schema
         references = list(getattr(self.profiler, "reference_expressions", ()))
@@ -192,10 +231,20 @@ class ContinuousDiscoveryLDM(AlphaLDM):
         ).hexdigest()
         return {
             "method": self.name,
+            "gp_fit_policy": "full_history_deterministic_refit_v2",
             "train_period": train_period.to_dict(),
             "profile_schema_version": schema.version,
             "profile_feature_dim": len(schema.names),
             "reference_expressions_sha256": reference_digest,
+            "profile": {
+                "period": (
+                    self.profiler.period.to_dict()
+                    if getattr(self.profiler, "period", None) is not None else None
+                ),
+                "provider_uri": str(getattr(self.profiler, "provider_uri", "")),
+                "market": getattr(self.profiler, "market", None),
+                "min_observations": getattr(self.profiler, "min_observations", None),
+            },
             "objective": self.objective,
             "search_objective": self.search_objective,
             "seed_group": self.seed_group,
@@ -222,6 +271,7 @@ class ContinuousDiscoveryLDM(AlphaLDM):
     def _committed_rows(
         self,
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        _repair_incomplete_ledger_tail(self.ledger_path)
         rows = _read_jsonl(self.ledger_path)
         factors_by_attempt: dict[str, list[dict[str, Any]]] = {}
         commits: list[dict[str, Any]] = []
@@ -245,7 +295,11 @@ class ContinuousDiscoveryLDM(AlphaLDM):
             attempt_rows = factors_by_attempt.get(attempt_id, [])
             expected_count = int(commit.get("observation_count", -1))
             if len(attempt_rows) != expected_count:
-                break
+                raise RuntimeError("continuous ledger commit has an inconsistent observation count")
+            if round_id > 0 and expected_count != self.evaluate_per_round:
+                raise RuntimeError("continuous ledger contains an incomplete committed round")
+            if any(int(row.get("round_id", -1)) != round_id for row in attempt_rows):
+                raise RuntimeError("continuous ledger factor/commit round mismatch")
             accepted_commits.append(commit)
             committed_factors.extend(attempt_rows)
             expected_round += 1
@@ -265,13 +319,13 @@ class ContinuousDiscoveryLDM(AlphaLDM):
             from .legacy import import_legacy_run
 
             import_legacy_run(self, train_period=train_period, target_rounds=rounds)
-        if not self.resume or not self.ledger_path.exists():
+        self.validate_output_directory()
+        if not self.ledger_path.exists():
             return None
         factors, commits = self._committed_rows()
         if not commits:
-            raise RuntimeError(
-                f"{self.ledger_path} exists but contains no complete round commit"
-            )
+            emit({"event": "ldm_continuous_recovering_uncommitted_warmup", "cycle_id": cycle_id})
+            return None
         latest = commits[-1]
         completed_round = int(latest["round_id"])
         if completed_round > int(rounds):
@@ -280,9 +334,12 @@ class ContinuousDiscoveryLDM(AlphaLDM):
             )
         signature = self._signature(train_period)
         if latest.get("signature") != signature:
+            previous = latest.get("signature") or {}
+            changed = [key for key in signature if previous.get(key) != signature[key]]
             raise ValueError(
-                "continuous resume signature mismatch; the data/schema/search settings "
-                "changed, so resuming would reinterpret prior observations"
+                "continuous resume signature mismatch in " + ", ".join(changed) +
+                "; data/schema/search settings changed. Existing reports remain readable, "
+                "but resuming would reinterpret prior observations; use a new run directory"
             )
 
         schema = self.profiler.schema
@@ -292,11 +349,21 @@ class ContinuousDiscoveryLDM(AlphaLDM):
         best: FactorCandidate | None = None
         best_result: EvaluationResult | None = None
         best_score = float("-inf")
-        for row in sorted(factors, key=lambda item: int(item["evaluation_index"])):
+        for index, row in enumerate(sorted(factors, key=lambda item: int(item["evaluation_index"])), 1):
             candidate = _candidate_from_dict(row["candidate"])
             result = _result_from_dict(row["train"])
             score = float(row["search_score"])
             feature = np.asarray(row["feature"], dtype=float)
+            self._verify_result_identity(candidate.expression, result, train_period)
+            if (
+                not result.success
+                or not np.isfinite(score)
+                or not math.isclose(score, self._score(result), rel_tol=1e-12, abs_tol=1e-14)
+                or row.get("canonical") != _safe_canonical(candidate.expression)
+                or int(row["evaluation_index"]) != index
+                or int(row["round_id"]) != candidate.round_id
+            ):
+                raise RuntimeError("continuous ledger contains an unverified or misaligned train observation")
             self._record_observation(
                 history,
                 feature=feature,

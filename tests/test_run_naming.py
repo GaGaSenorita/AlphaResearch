@@ -50,9 +50,15 @@ def test_unknown_method_cannot_create_a_run_name() -> None:
         )
 
 
-def test_active_configs_use_canonical_names_and_automatic_output_paths() -> None:
+def test_active_configs_use_canonical_names_and_safe_output_paths() -> None:
     for path in sorted((REPO_ROOT / "configs").glob("*/*.yaml")):
         config = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert config["name"] == path.stem
         assert config["method"] in CANONICAL_METHODS
-        assert "out-dir" not in config.get("args", {})
+        output = config.get("args", {}).get("out-dir")
+        if config["method"] in {"ldm_split_robust_reward", "ldm_rankic_worst_qehvi"}:
+            assert output == "{repo_root}/../AlphaResearch_local_results/stage2/{method}/{run_name}"
+        elif path.parent.name == "smoke":
+            assert output == "{repo_root}/runtime/smoke/{run_name}"
+        else:
+            assert output is None
